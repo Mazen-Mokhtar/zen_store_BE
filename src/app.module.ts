@@ -8,6 +8,7 @@ import { GameModule } from './modules/game/game.module';
 import { SuperAdminPackagesModule } from './modules/SuperAdmin/packages/packages.module';
 import { PackagesModule } from './modules/packages/packages.module';
 import { categoryModule } from './modules/category/category.module';
+import { OrderModule } from './modules/order/order.module';
 @Module({
   imports: [MongooseModule.forRoot(process.env.DB_URL as string),
   EventEmitterModule.forRoot(),
@@ -17,7 +18,8 @@ import { categoryModule } from './modules/category/category.module';
     GameModule,
     SuperAdminPackagesModule,
     PackagesModule,
-    categoryModule
+    categoryModule,
+    OrderModule
   ],
   controllers: [],
   providers: [],

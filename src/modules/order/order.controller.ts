@@ -1,7 +1,87 @@
-import { Controller } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Req, UseGuards, UsePipes, ValidationPipe, Query } from "@nestjs/common";
 import { OrderService } from './order.service';
+import { User } from "src/commen/Decorator/user.decorator";
+import { TUser } from "src/DB/models/User/user.schema";
+import { CreateOrderDTO, OrderIdDTO, UpdateOrderStatusDTO, AdminOrderQueryDTO } from "./dto";
+import { Roles } from "src/commen/Decorator/roles.decorator";
+import { AuthGuard } from "src/commen/Guards/auth.guard";
+import { RolesGuard } from "src/commen/Guards/role.guard";
+import { Request } from "express";
+import { Types } from "mongoose";
+import { RoleTypes } from "src/DB/models/User/user.schema";
 
-@Controller('order')
+@UsePipes(new ValidationPipe({ whitelist: false }))
+@Controller("order")
 export class OrderController {
-  constructor(private readonly orderService: OrderService) {}
+    constructor(private readonly orderService: OrderService) { }
+
+    @Get("admin/stats")
+    @Roles([RoleTypes.ADMIN])
+    @UseGuards(AuthGuard, RolesGuard)
+    async getOrderStats() {
+        return await this.orderService.getOrderStats();
+    }
+
+    @Get("/")
+    @UseGuards(AuthGuard)
+    async getOrders(@User() user: TUser) {
+        return await this.orderService.getUserOrders(user._id);
+    }
+
+    @Get("admin/all")
+    @Roles([RoleTypes.ADMIN])
+    @UseGuards(AuthGuard, RolesGuard)
+    async getAllOrders(@User() user: TUser, @Query() query: AdminOrderQueryDTO) {
+        return await this.orderService.getAllOrders(query, user);
+    }
+
+    @Post("/")
+    @UseGuards(AuthGuard)
+    async createOrder(@User() user: TUser, @Body() body: CreateOrderDTO) {
+        return await this.orderService.createOrder(user, body);
+    }
+
+    @Post("/webhook")
+    async webhook(@Req() req: Request) {
+        return await this.orderService.webhook(req);
+    }
+
+    @Post("/:orderId/checkout")
+    @Roles(["user", RoleTypes.SUPER_ADMIN])
+    @UseGuards(AuthGuard, RolesGuard)
+    async checkout(@User() user: TUser, @Param() param: OrderIdDTO) {
+        return await this.orderService.checkout(user, param.orderId);
+    }
+
+    @Patch("/:orderId/cancel")
+    @Roles(["user"])
+    @UseGuards(AuthGuard, RolesGuard)
+    async cancelOrder(@User() user: TUser, @Param() param: OrderIdDTO) {
+        return await this.orderService.cancelOrder(user, param.orderId);
+    }
+    
+    @Get(':orderId')
+    @Roles(["user"])
+    @UseGuards(AuthGuard, RolesGuard)
+    async getOrderDetails(@User() user: TUser, @Param() params: OrderIdDTO) {
+        const orderId = new Types.ObjectId(params.orderId);
+        return this.orderService.getOrderDetails(user, orderId);
+    }
+
+    // Admin Dashboard Endpoints
+    @Get("admin/:orderId")
+    @Roles([RoleTypes.ADMIN])
+    @UseGuards(AuthGuard, RolesGuard)
+    async getOrderById(@User() user: TUser, @Param() params: OrderIdDTO) {
+        const orderId = new Types.ObjectId(params.orderId);
+        return await this.orderService.getOrderById(orderId, user);
+    }
+
+    @Patch("admin/:orderId/status")
+    @Roles([RoleTypes.ADMIN])
+    @UseGuards(AuthGuard, RolesGuard)
+    async updateOrderStatus(@User() admin: TUser, @Param() params: OrderIdDTO, @Body() body: UpdateOrderStatusDTO) {
+        const orderId = new Types.ObjectId(params.orderId);
+        return await this.orderService.updateOrderStatus(admin, orderId, body);
+    }
 }

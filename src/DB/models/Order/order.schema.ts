@@ -38,6 +38,18 @@ export class Order {
 
   @Prop({ type: Date, default: Date.now })
   createdAt: Date;
+
+  @Prop({ type: Date })
+  paidAt: Date;
+
+  @Prop({ type: Number })
+  refundAmount: number;
+
+  @Prop({ type: Date })
+  refundDate: Date;
+
+  @Prop({ type: String })
+  intent: string; // Stripe payment intent ID
 }
 
 

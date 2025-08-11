@@ -8,7 +8,7 @@ export class PackagesController {
   @Get()
   async getAvailablePackages(@Query() dto: GetPackagesDto) {
     const packages = await this.packagesService.getAvailablePackages(dto);
-    return { success: true, data: packages };
+    return packages;
   }
 
   @Get(':id')

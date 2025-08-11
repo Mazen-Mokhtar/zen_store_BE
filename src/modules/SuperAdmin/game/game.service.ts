@@ -193,7 +193,7 @@ export class GameService {
 
         const games = await this.gameRepository.find(
             filter,
-            { select: "name description image type price isOffer originalPrice finalPrice discountPercentage offer categories isActive isPopular createdAt" },
+            { select: "name description image type price isOffer originalPrice finalPrice discountPercentage offer categories isActive isPopular createdAt accountInfoFields" },
             {
                 sort: { createdAt: -1 },
             }

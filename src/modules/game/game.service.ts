@@ -3,12 +3,15 @@ import { Types } from 'mongoose';
 import { messageSystem } from 'src/commen/messages';
 import { GameRepository } from 'src/DB/models/Game/game.repository';
 import { categoryRepository } from 'src/DB/models/Category/category.repository';
+import { GameType } from 'src/DB/models/Game/game.schema';
+import { PackageRepository } from 'src/DB/models/Packages/packages.repository';
 
 @Injectable()
 export class GameService {
     constructor(
         private readonly gameRepository: GameRepository,
-        private readonly categoryRepository: categoryRepository
+        private readonly categoryRepository: categoryRepository,
+        private readonly packageRepository: PackageRepository,
     ) { }
     async listGames(query: {
         search?: string;
@@ -49,7 +52,7 @@ export class GameService {
             page,
             limit,
             { createdAt: -1 },
-            { select: 'name description image offer categories isActive createdAt isPopular price' }
+            { select: 'name description image offer categories isActive createdAt isPopular price accountInfoFields' }
         );
 
         return {
@@ -79,7 +82,7 @@ export class GameService {
                         { isDeleted: { $exists: false } }
                     ]
                 },
-                { select: 'name description image offer categories isActive createdAt isPopular price' },
+                { select: 'name description image offer categories isActive createdAt isPopular price accountInfoFields' },
                 {
                     sort: { createdAt: -1 },
                     lean: true
@@ -107,7 +110,7 @@ export class GameService {
     async getGameById(gameId: Types.ObjectId) {
         const game = await this.gameRepository.findById(
             gameId,
-            { select: 'name description image offer categories isActive createdAt isPopular' },
+            { select: 'name description image offer categories isActive createdAt isPopular accountInfoFields' },
             { lean: true } // Use lean for better performance
         );
 
@@ -120,6 +123,74 @@ export class GameService {
         }
 
         return { success: true, data: game };
+    }
+
+    // Get only paid games (e.g., Steam games with a price) within a category
+    async getPaidGamesByCategory(categoryId: Types.ObjectId) {
+        try {
+            const category = await this.categoryRepository.findById(categoryId);
+            if (!category) {
+                throw new NotFoundException('Category not found');
+            }
+
+            const games = await this.gameRepository.find(
+                {
+                    categoryId,
+                    type: GameType.STEAM,
+                    isActive: true,
+                    $or: [
+                        { isDeleted: false },
+                        { isDeleted: { $exists: false } }
+                    ]
+                },
+                { select: 'name description image offer categories isActive createdAt isPopular price accountInfoFields' },
+                { sort: { createdAt: -1 }, lean: true }
+            );
+
+            return {
+                success: true,
+                data: games,
+                total: games.length,
+                category: { id: category._id, name: category.name, logo: category.logo },
+            };
+        } catch (error) {
+            if (error instanceof NotFoundException) throw error;
+            throw new BadRequestException('Failed to fetch paid games for this category');
+        }
+    }
+
+    // Get games that have active packages (top-up/recharge) within a category
+    async getGamesWithPackagesByCategory(categoryId: Types.ObjectId) {
+        try {
+            const category = await this.categoryRepository.findById(categoryId);
+            if (!category) {
+                throw new NotFoundException('Category not found');
+            }
+            console.log(categoryId);
+            const games = await this.gameRepository.find(
+                {
+                    categoryId : categoryId,
+                    type: { $ne: GameType.STEAM },
+                    isActive: true,
+                    $or: [
+                        { isDeleted: false },
+                        { isDeleted: { $exists: false } }
+                    ]
+                },
+                { select: 'name description image isOffer categoryId isActive createdAt isPopular price accountInfoFields' },
+                { sort: { createdAt: -1 }, lean: true }
+            );
+            console.log(games);
+            return {
+                success: true,
+                data: games,
+                total: games.length,
+                category: { id: category._id, name: category.name, logo: category.logo },
+            };
+        } catch (error) {
+            if (error instanceof NotFoundException) throw error;
+            throw new BadRequestException('Failed to fetch games for this category');
+        }
     }
 
 }

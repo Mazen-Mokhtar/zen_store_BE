@@ -34,6 +34,7 @@ export class AccountInfoFieldDto {
     @IsNotEmpty()
     fieldName: string;
 
+    @Type(() => Boolean)
     @IsBoolean()
     isRequired: boolean;
 }
@@ -43,6 +44,7 @@ export class OfferDto {
     @IsNumber()
     discountPercent?: number;
 
+    @Type(() => Boolean)
     @IsOptional()
     @IsBoolean()
     isActive?: boolean;
@@ -69,6 +71,7 @@ export class CreateGameDto {
 
     // Offer fields for Steam games
     @ValidateIf(o => o.type === GameType.STEAM)
+    @Type(() => Boolean)
     @IsBoolean()
     isOffer?: boolean;
 
@@ -117,6 +120,7 @@ export class CreateGameDto {
 */
 export class UpdateGameDto extends PartialType(CreateGameDto) { }
 export class ToggleGameStatusDto {
+  @Type(() => Boolean)
   @IsBoolean()
   isActive: boolean;
 }
@@ -135,6 +139,7 @@ export class ListGamesQueryDto {
   @IsEnum(['all', 'active', 'deleted'])
   status?: 'all' | 'active' | 'deleted';
   
+  @Type(() => Boolean)
   @IsOptional()
   @IsBoolean()
   isPopular?: boolean;
@@ -143,6 +148,7 @@ export class ListGamesQueryDto {
   @IsEnum(GameType)
   type?: GameType;
 
+  @Type(() => Boolean)
   @IsOptional()
   @IsBoolean()
   isOffer?: boolean;

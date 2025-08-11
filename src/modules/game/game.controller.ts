@@ -15,6 +15,15 @@ export class GameController {
   async getGamesByCategory(@Param() params: CategoryIdDto) {
     return this.gameService.getGamesByCategory(new Types.ObjectId(params.categoryId));
   }
+  @Get('category/:categoryId/paid')
+  async getPaidGamesByCategory(@Param() params: CategoryIdDto) {
+    return this.gameService.getPaidGamesByCategory(new Types.ObjectId(params.categoryId));
+  }
+  @Get('category/:categoryId/with-packages')
+  async getGamesWithPackagesByCategory(@Param() params: CategoryIdDto) {
+    console.log(params.categoryId);
+    return await this.gameService.getGamesWithPackagesByCategory(new Types.ObjectId(params.categoryId));
+  }
 
   @Get(':gameId')
   async getGameById(@Param('gameId', MongoIdPipe) gameId: string) {

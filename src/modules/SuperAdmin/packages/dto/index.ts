@@ -23,11 +23,12 @@ export class CreatePackageDto {
     @IsString()
     @IsNotEmpty()
     title: string;
-
+    @Type(() => Number)
     @IsNumber()
     @IsNotEmpty()
     price: number;
 
+    @Type(() => Boolean)
     @IsOptional()
     @IsBoolean()
     isOffer?: boolean;
@@ -46,6 +47,7 @@ export class CreatePackageDto {
     @IsNotEmpty()
     currency: string;
 
+    @Type(() => Boolean)
     @IsBoolean()
     isActive?: boolean;
 
