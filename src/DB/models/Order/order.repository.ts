@@ -23,11 +23,22 @@ export class OrderRepository extends DBService<OrderDocument> {
             query = query.sort(options.sort);
         }
 
-        // Apply pagination
+        // Import security config
+        const { SecurityConfig } = require('../../../commen/config/security.config');
+        
+        // Apply pagination with default and maximum limits from config
         if (page && page > 0) {
-            const limit = options.limit || 10;
+            // If limit is provided, ensure it doesn't exceed maxPageSize
+            const limit = options.limit ? 
+                Math.min(options.limit, SecurityConfig.mongodb.maxPageSize) : 
+                SecurityConfig.mongodb.defaultPageSize;
             const skip = (page - 1) * limit;
             query = query.skip(skip).limit(limit);
+        } else {
+            // Even without pagination, apply a default limit to prevent resource exhaustion
+            query = query.limit(options.limit ? 
+                Math.min(options.limit, SecurityConfig.mongodb.maxQueryLimit) : 
+                SecurityConfig.mongodb.defaultQueryLimit);
         }
 
         // Apply population

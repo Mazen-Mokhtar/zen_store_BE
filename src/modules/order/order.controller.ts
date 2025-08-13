@@ -16,7 +16,7 @@ export class OrderController {
     constructor(private readonly orderService: OrderService) { }
 
     @Get("admin/stats")
-    @Roles([RoleTypes.ADMIN])
+    @Roles([RoleTypes.ADMIN, RoleTypes.SUPER_ADMIN])
     @UseGuards(AuthGuard, RolesGuard)
     async getOrderStats() {
         return await this.orderService.getOrderStats();
@@ -29,7 +29,7 @@ export class OrderController {
     }
 
     @Get("admin/all")
-    @Roles([RoleTypes.ADMIN])
+    @Roles([RoleTypes.ADMIN, RoleTypes.SUPER_ADMIN])
     @UseGuards(AuthGuard, RolesGuard)
     async getAllOrders(@User() user: TUser, @Query() query: AdminOrderQueryDTO) {
         return await this.orderService.getAllOrders(query, user);
@@ -54,7 +54,7 @@ export class OrderController {
     }
 
     @Patch("/:orderId/cancel")
-    @Roles(["user"])
+    @Roles([RoleTypes.SUPER_ADMIN])
     @UseGuards(AuthGuard, RolesGuard)
     async cancelOrder(@User() user: TUser, @Param() param: OrderIdDTO) {
         return await this.orderService.cancelOrder(user, param.orderId);
@@ -70,7 +70,7 @@ export class OrderController {
 
     // Admin Dashboard Endpoints
     @Get("admin/:orderId")
-    @Roles([RoleTypes.ADMIN])
+    @Roles([RoleTypes.ADMIN, RoleTypes.SUPER_ADMIN])
     @UseGuards(AuthGuard, RolesGuard)
     async getOrderById(@User() user: TUser, @Param() params: OrderIdDTO) {
         const orderId = new Types.ObjectId(params.orderId);
@@ -78,7 +78,7 @@ export class OrderController {
     }
 
     @Patch("admin/:orderId/status")
-    @Roles([RoleTypes.ADMIN])
+    @Roles([RoleTypes.ADMIN, RoleTypes.SUPER_ADMIN])
     @UseGuards(AuthGuard, RolesGuard)
     async updateOrderStatus(@User() admin: TUser, @Param() params: OrderIdDTO, @Body() body: UpdateOrderStatusDTO) {
         const orderId = new Types.ObjectId(params.orderId);

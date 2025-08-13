@@ -18,11 +18,19 @@ export abstract class DBService<T> {
         { select }: { select?: string } = {}, // ✅ أسهل تحديد للحقول
         options?: QueryOptions & { sort?: any; limit?: number }
     ): Promise<T[]> {
+        // Import security config
+        const { SecurityConfig } = require('../../commen/config/security.config');
+        
+        // Apply default limit if not specified to prevent resource exhaustion
+        const limit = options?.limit && options.limit > 0 ? 
+            Math.min(options.limit, SecurityConfig.mongodb.maxQueryLimit) : 
+            SecurityConfig.mongodb.defaultQueryLimit;
+            
         return this.model
             .find(filter, null, options)
             .select(select || '')
             .sort(options?.sort || {})
-            .limit(options?.limit || 0)
+            .limit(limit)
             ;
     }
 
