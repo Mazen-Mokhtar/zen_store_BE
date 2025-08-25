@@ -29,7 +29,9 @@ export class GameService {
 
         // Add search filter if provided
         if (query.search) {
-            filter.name = { $regex: query.search, $options: 'i' };
+            // Sanitize regex input to prevent NoSQL injection
+            const sanitizedSearch = query.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            filter.name = { $regex: sanitizedSearch, $options: 'i' };
         }
 
         // Add categories filter if provided

@@ -10,7 +10,7 @@ import { GameType } from 'src/DB/models/Game/game.schema';
 @Injectable()
 export class GameService {
     constructor(private readonly gameRepository: GameRepository, private readonly cloudService: cloudService) { }
-    async addGame(user: TUser, body: CreateGameDto, file?: Express.Multer.File) {
+    async addGame(user: TUser, body: CreateGameDto, files?: Express.Multer.File[]) {
         if (!body.categoryId) throw new BadRequestException('categoryId is required');
         
         // التحقق من السعر للعاب Steam
@@ -30,37 +30,93 @@ export class GameService {
                 throw new BadRequestException('Final price must be less than original price for an offer');
             }
         }
+
+        // التحقق من أن الصور والفيديو للألعاب من نوع Steam فقط
+        if (body.type !== GameType.STEAM) {
+            if (body.images && body.images.length > 0) {
+                throw new BadRequestException('Multiple images are only allowed for Steam games');
+            }
+            if (body.video) {
+                throw new BadRequestException('Video is only allowed for Steam games');
+            }
+            if (body.backgroundImage) {
+                throw new BadRequestException('Background image is only allowed for Steam games');
+            }
+        }
         
         const game = await this.gameRepository.findOne({ name: body.name })
         if (game)
             throw new BadRequestException(messageSystem.game.alreadyExist)
         
         let image: IAttachments | undefined = undefined;
+        let images: IAttachments[] = [];
+        let video: IAttachments | undefined = undefined;
+        let backgroundImage: IAttachments | undefined = undefined;
         
-        // إذا كان هناك ملف مرفوع، ارفعه إلى الخدمة السحابية
-        if (file) {
-            let folderId = String(Math.floor(100000 + Math.random() * 900000));
+        // التحقق من أن الملفات المتعددة للألعاب من نوع Steam فقط
+        if (files && files.length > 1 && body.type !== GameType.STEAM) {
+            throw new BadRequestException('Multiple files upload is only allowed for Steam games');
+        }
+        
+        // معالجة الملفات المرفوعة
+        if (files && files.length > 0) {
+            // Use crypto for secure random number generation
+            const crypto = require('crypto');
+            let folderId = crypto.randomInt(100000, 999999).toString();
             let folder = { folder: `${process.env.APP_NAME}/games/photos/${folderId}` };
             
-            const result = await this.cloudService.uploadFile(file, folder);
-            if (result.secure_url) {
-                image = {
-                    secure_url: result.secure_url,
-                    public_id: result.public_id,
-                };
-            } else {
-                throw new BadRequestException(messageSystem.game.failToUpload);
+            for (const file of files) {
+                const result = await this.cloudService.uploadFile(file, folder);
+                if (result.secure_url) {
+                    const attachment: IAttachments = {
+                        secure_url: result.secure_url,
+                        public_id: result.public_id,
+                    };
+                    
+                    // تحديد نوع الملف بناءً على mimetype واسم الحقل في FormData
+                    if (file.mimetype.startsWith('video/')) {
+                        video = attachment;
+                    } else if (file.mimetype.startsWith('image/')) {
+                        // التحقق من اسم الحقل في FormData لتحديد نوع الصورة
+                        const fieldName = file.fieldname;
+                        
+                        if (fieldName === 'backgroundImage') {
+                            // إذا كان اسم الحقل backgroundImage، اجعلها صورة خلفية
+                            backgroundImage = attachment;
+                        } else if (fieldName === 'image' && !image) {
+                            // إذا كان اسم الحقل image ولم يتم تعيين الصورة الرئيسية بعد
+                            image = attachment;
+                        } else {
+                            // إضافة باقي الصور إلى مصفوفة الصور (images field أو أي حقل آخر)
+                            images.push(attachment);
+                        }
+                    }
+                } else {
+                    throw new BadRequestException(messageSystem.game.failToUpload);
+                }
             }
         }
         
-        // إذا كان هناك image في الـ body، استخدمه
+        // إذا كان هناك attachments في الـ body، استخدمها
         if (body.image) {
             image = body.image;
+        }
+        if (body.images) {
+            images = body.images;
+        }
+        if (body.video) {
+            video = body.video;
+        }
+        if (body.backgroundImage) {
+            backgroundImage = body.backgroundImage;
         }
         
         const newGame = await this.gameRepository.create({ 
             ...body, 
             image,
+            images,
+            video,
+            backgroundImage,
             categoryId: new Types.ObjectId(body.categoryId), 
             createdBy: user._id 
         })
@@ -99,7 +155,9 @@ export class GameService {
             throw new NotFoundException(messageSystem.game.notFound);
         }
         let image: IAttachments | undefined = undefined;
-        let folderId = String(Math.floor(100000 + Math.random() * 900000));
+        // Use crypto for secure random number generation
+        const crypto = require('crypto');
+        let folderId = crypto.randomInt(100000, 999999).toString();
         let folder = {};
 
         // إذا كانت هناك صورة سابقة، استخدم `public_id` للتحديث
@@ -167,7 +225,9 @@ export class GameService {
         const filter: Record<string, any> = {};
 
         if (query.search) {
-            filter.name = { $regex: query.search, $options: 'i' };
+            // Sanitize regex input to prevent NoSQL injection
+            const sanitizedSearch = query.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            filter.name = { $regex: sanitizedSearch, $options: 'i' };
         }
 
         if (query.status === 'active') {

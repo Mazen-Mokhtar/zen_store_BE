@@ -21,6 +21,11 @@ export class CsrfService {
       return false;
     }
     
+    // Check if tokens have the same length before comparison
+    if (token.length !== expectedToken.length) {
+      return false;
+    }
+    
     // Use timing-safe comparison to prevent timing attacks
     return crypto.timingSafeEqual(
       Buffer.from(token),

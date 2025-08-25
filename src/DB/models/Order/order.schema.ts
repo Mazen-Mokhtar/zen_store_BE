@@ -15,8 +15,8 @@ export class Order {
   @Prop({ type: Types.ObjectId, ref: 'Game', required: true })
   gameId: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'Package', required: true })
-  packageId: Types.ObjectId;
+  @Prop({ type: Types.ObjectId, ref: 'Package', required: false })
+  packageId?: Types.ObjectId;
 
   @Prop({ type: [{ fieldName: String, value: String }], required: true })
   accountInfo: { fieldName: string; value: string }[];

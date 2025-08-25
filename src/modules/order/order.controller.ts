@@ -47,7 +47,7 @@ export class OrderController {
     }
 
     @Post("/:orderId/checkout")
-    @Roles(["user", RoleTypes.SUPER_ADMIN])
+    @Roles(["user", RoleTypes.SUPER_ADMIN, RoleTypes.ADMIN])
     @UseGuards(AuthGuard, RolesGuard)
     async checkout(@User() user: TUser, @Param() param: OrderIdDTO) {
         return await this.orderService.checkout(user, param.orderId);

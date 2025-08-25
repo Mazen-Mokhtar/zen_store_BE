@@ -62,7 +62,12 @@ export class AuthRateLimitMiddleware implements NestMiddleware {
     legacyHeaders: false,
     keyGenerator: (req) => {
       // Use IP + email as the key to prevent multiple attempts with different emails from same IP
-      return `${req.ip || '127.0.0.1'}-${req.body.email || 'unknown'}`;
+      // Validate and sanitize email input
+      const email = req.body?.email && typeof req.body.email === 'string' 
+        ? req.body.email.toLowerCase().trim() 
+        : 'unknown';
+      const ip = req.ip || req.connection?.remoteAddress || '127.0.0.1';
+      return `${ip}-${email}`;
     },
     handler: (req, res, next, options) => {
       // Report potential brute force attack to security monitoring service
@@ -70,7 +75,9 @@ export class AuthRateLimitMiddleware implements NestMiddleware {
         type: SecurityEventType.BRUTE_FORCE_ATTEMPT,
         timestamp: new Date(),
         ip: req.ip || '127.0.0.1',
-        email: req.body.email,
+        email: req.body?.email && typeof req.body.email === 'string' 
+          ? req.body.email.toLowerCase().trim() 
+          : 'unknown',
         path: req.path,
         details: {
           headers: req.headers,

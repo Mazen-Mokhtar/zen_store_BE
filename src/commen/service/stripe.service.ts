@@ -86,12 +86,15 @@ export class StripeService {
             // Get the signature sent by Stripe
             const signature = req.headers['stripe-signature'];
             try {
+                // Ensure body is properly formatted for Stripe webhook verification
+                const rawBody = Buffer.isBuffer(body) ? body : Buffer.from(body);
                 event = this.stripe.webhooks.constructEvent(
-                    body,
-                    signature || [],
+                    rawBody,
+                    signature as string,
                     endpointSecret
                 );
             } catch (err) {
+                console.error('Webhook signature verification error:', err);
                 throw new BadRequestException("⚠️  Webhook signature verification failed")
             }
         }

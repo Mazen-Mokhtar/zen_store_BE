@@ -42,6 +42,29 @@ export class Game {
   }))
   image?: IAttachments;
 
+  // Multiple images for Steam games
+  @Prop([
+    raw({
+      secure_url: { type: String, required: false },
+      public_id: { type: String, required: false }
+    })
+  ])
+  images?: IAttachments[];
+
+  // Video for Steam games (optional)
+  @Prop(raw({
+    secure_url: { type: String, required: false },
+    public_id: { type: String, required: false }
+  }))
+  video?: IAttachments;
+
+  // Background image for Steam games frontend
+  @Prop(raw({
+    secure_url: { type: String, required: false },
+    public_id: { type: String, required: false }
+  }))
+  backgroundImage?: IAttachments;
+
   // New field to define required/optional fields for account info
   @Prop({
     type: [{ fieldName: { type: String }, isRequired: { type: Boolean } }],

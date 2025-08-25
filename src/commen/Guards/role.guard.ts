@@ -8,6 +8,12 @@ export class RolesGuard implements CanActivate {
     canActivate(context: ExecutionContext): boolean {
         const roles = this.reflector.get(Roles, context.getHandler())
         const request = context.switchToHttp().getRequest();
+        
+        // If no roles are specified, allow access (only authentication required)
+        if (!roles || !Array.isArray(roles)) {
+            return true;
+        }
+        
         if (!roles.includes(request.user.role))
             throw new UnauthorizedException("Not allow for you")
         return true

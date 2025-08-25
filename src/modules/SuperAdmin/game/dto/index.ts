@@ -99,6 +99,22 @@ export class CreateGameDto {
     @Type(() => AttachmentDto)
     image?: AttachmentDto;       // اختياري - يمكن أن تأتي الصورة من file upload
 
+    @IsOptional()
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => AttachmentDto)
+    images?: AttachmentDto[];    // مصفوفة صور للألعاب من نوع Steam
+
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => AttachmentDto)
+    video?: AttachmentDto;       // فيديو اختياري للألعاب من نوع Steam
+
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => AttachmentDto)
+    backgroundImage?: AttachmentDto; // صورة خلفية للألعاب من نوع Steam
+
     @IsMongoId()
     @IsNotEmpty()
     categoryId: string; // ObjectId للفئة

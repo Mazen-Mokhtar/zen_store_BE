@@ -9,6 +9,7 @@ import {
   Put,
   Query,
   UploadedFile,
+  UploadedFiles,
   UseGuards,
   UseInterceptors,
   UsePipes,
@@ -19,7 +20,7 @@ import { RoleTypes, TUser } from 'src/DB/models/User/user.schema';
 import { Roles } from 'src/commen/Decorator/roles.decorator';
 import { AuthGuard } from 'src/commen/Guards/auth.guard';
 import { RolesGuard } from 'src/commen/Guards/role.guard';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { cloudMulter } from 'src/commen/multer/cloud.multer';
 import { User } from 'src/commen/Decorator/user.decorator';
 import { CreateGameDto, ListGamesQueryDto, ToggleGameStatusDto, ToggleGamePopularDto, UpdateGameDto } from './dto';
@@ -30,16 +31,16 @@ import { MongoIdPipe } from 'src/commen/pipes/mongoId.pipes';
 export class GameController {
   constructor(private readonly gameService: GameService) { }
   
-  @UseInterceptors(FileInterceptor('image', cloudMulter()))
+  @UseInterceptors(FilesInterceptor('files', 10, cloudMulter())) // يدعم رفع حتى 10 ملفات
   @UseGuards(AuthGuard, RolesGuard)
   @Roles([RoleTypes.SUPER_ADMIN])
   @Post()
   async addGame(
     @User() user: TUser, 
     @Body() body: CreateGameDto,
-    @UploadedFile() file?: Express.Multer.File
+    @UploadedFiles() files?: Express.Multer.File[]
   ) {
-    return await this.gameService.addGame(user, body, file)
+    return await this.gameService.addGame(user, body, files)
   }
   // تحديث لعبة موجودة
   @UseGuards(AuthGuard, RolesGuard)

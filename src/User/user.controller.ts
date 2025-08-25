@@ -11,9 +11,14 @@ import { TUser } from "src/DB/models/User/user.schema";
 export class userController {
     constructor(private readonly userService: userService) { }
     @Get("profile")
-    @Roles(["admin"])
-    @UseGuards(AuthGuard,RolesGuard)
+    @UseGuards(AuthGuard)
     getProfile(@User() user: TUser) {
+        return this.userService.getProfile(user)
+    }
+    @Get("profile/admin")
+    @UseGuards(AuthGuard, RolesGuard)
+    @Roles(["admin", "superAdmin"])
+    getProfileAdmin(@User() user: TUser) {
         return this.userService.getProfile(user)
     }
 }

@@ -5,6 +5,7 @@ import { PackageRepository } from "src/DB/models/Packages/packages.repository";
 import { TUser } from "src/DB/models/User/user.schema";
 import { CreateOrderDTO, OrderIdDTO, UpdateOrderStatusDTO, AdminOrderQueryDTO } from "./dto";
 import { OrderStatus } from "src/DB/models/Order/order.schema";
+import { GameType } from "src/DB/models/Game/game.schema";
 import { Types } from "mongoose";
 import { StripeService } from "src/commen/service/stripe.service";
 import { Request } from "express";
@@ -30,32 +31,76 @@ export class OrderService {
             throw new BadRequestException("Game not found or inactive");
         }
 
-        // Validate package exists and is active
-        const packageItem = await this.packageRepository.findOne({ 
-            _id: body.packageId, 
-            gameId: body.gameId,
-            isActive: true, 
-            isDeleted: { $ne: true } 
-        });
-        if (!packageItem) {
-            throw new BadRequestException("Package not found or inactive");
+        // Validation logic based on game type
+        let packageItem: any = null;
+        if (game.type === GameType.STEAM) {
+            // Steam games don't use packages - they are sold directly
+            if (body.packageId) {
+                throw new BadRequestException("Steam games cannot have packages");
+            }
+            // Steam games must have a direct price
+            if (game.price === undefined || game.price === null) {
+                throw new BadRequestException("Steam game must have a price");
+            }
+        } else {
+            // Non-Steam games always require packages (physical items, gift cards, etc.)
+            if (!body.packageId) {
+                throw new BadRequestException("Package is required for non-Steam games");
+            }
+            packageItem = await this.packageRepository.findOne({ 
+                _id: body.packageId, 
+                gameId: body.gameId,
+                isActive: true, 
+                isDeleted: { $ne: true } 
+            });
+            if (!packageItem) {
+                throw new BadRequestException("Package not found or inactive");
+            }
         }
 
-        // Calculate total amount (use final price if offer exists, otherwise use regular price)
-        const totalAmount = packageItem.isOffer && packageItem.finalPrice 
-            ? packageItem.finalPrice 
-            : packageItem.price;
+        // Calculate total amount based on game type and offers
+        let totalAmount: number;
+        
+        if (game.type === GameType.STEAM) {
+            // For Steam games, prioritize game pricing over package pricing
+            if (game.isOffer && game.finalPrice) {
+                // Use game's offer price
+                totalAmount = game.finalPrice;
+            } else if (game.price !== undefined && game.price !== null) {
+                // Use game's regular price
+                totalAmount = game.price;
+            } else if (packageItem && packageItem.isOffer && packageItem.finalPrice) {
+                // Use package's offer price as fallback
+                totalAmount = packageItem.finalPrice;
+            } else if (packageItem) {
+                // Use package's regular price as final fallback
+                totalAmount = packageItem.price;
+            } else {
+                throw new BadRequestException("Unable to determine price for this Steam game");
+            }
+        } else {
+            // For non-Steam games, use package pricing
+            totalAmount = packageItem && packageItem.isOffer && packageItem.finalPrice 
+                ? packageItem.finalPrice 
+                : packageItem.price;
+        }
 
-        const order = await this.orderRepository.create({
+        const orderData: any = {
             userId: user._id,
             gameId: body.gameId,
-            packageId: body.packageId,
             accountInfo: body.accountInfo,
             paymentMethod: body.paymentMethod,
             totalAmount: totalAmount,
             status: OrderStatus.PENDING,
             adminNote: body.note
-        });
+        };
+
+        // Only add packageId if it exists
+        if (body.packageId) {
+            orderData.packageId = body.packageId;
+        }
+
+        const order = await this.orderRepository.create(orderData);
 
         return { success: true, data: order };
     }
@@ -72,13 +117,29 @@ export class OrderService {
             throw new BadRequestException("Invalid order or order not found");
         }
 
-        // Get game and package details for Stripe
+        // Get game details for Stripe
         const game = await this.gameRepository.findById(order.gameId);
-        const packageItem = await this.packageRepository.findById(order.packageId);
-
-        if (!game || !packageItem) {
-            throw new BadRequestException("Game or package not found");
+        if (!game) {
+            throw new BadRequestException("Game not found");
         }
+
+        // Get package details if packageId exists
+        let packageItem: any = null;
+        if (order.packageId) {
+            packageItem = await this.packageRepository.findById(order.packageId);
+            if (!packageItem) {
+                throw new BadRequestException("Package not found");
+            }
+        }
+
+        // Determine product name and currency
+        const productName = packageItem 
+            ? `${game.name} - ${packageItem.title}`
+            : game.name;
+        
+        const currency = packageItem 
+            ? packageItem.currency.toLowerCase()
+            : 'usd'; // Default currency for Steam games without packages
 
         const session = await this.stripeService.cheakoutSession({
             customer_email: user.email,
@@ -86,9 +147,9 @@ export class OrderService {
                 quantity: 1,
                 price_data: {
                     product_data: {
-                        name: `${game.name} - ${packageItem.title}`
+                        name: productName
                     },
-                    currency: packageItem.currency.toLowerCase(),
+                    currency: currency,
                     unit_amount: order.totalAmount * 100 // Convert to cents
                 }
             }],
@@ -155,8 +216,8 @@ export class OrderService {
             { sort: { createdAt: -1 } },
             undefined,
             [
-                { path: "gameId", select: "name image" },
-                { path: "packageId", select: "title price" }
+                { path: "gameId", select: "name image type" },
+                { path: "packageId", select: "title price", match: { _id: { $ne: null } } }
             ]
         );
         return { success: true, data: orders };
@@ -167,8 +228,8 @@ export class OrderService {
             _id: orderId,
             userId: user._id,
         }, "", {}, [
-            { path: "gameId", select: "name description image" },
-            { path: "packageId", select: "title price currency" }
+            { path: "gameId", select: "name description image type price" },
+            { path: "packageId", select: "title price currency", match: { _id: { $ne: null } } }
         ]);
 
         if (!order) {
@@ -193,8 +254,8 @@ export class OrderService {
             query.page,
             [
                 { path: "userId", select: "name email phone" },
-                { path: "gameId", select: "name" },
-                { path: "packageId", select: "title" }
+                { path: "gameId", select: "name type" },
+                { path: "packageId", select: "title", match: { _id: { $ne: null } } }
             ]
         );
         
@@ -208,8 +269,8 @@ export class OrderService {
             {},
             [
                 { path: "userId", select: "name email phone" },
-                { path: "gameId", select: "name description image" },
-                { path: "packageId", select: "title price currency" }
+                { path: "gameId", select: "name description image type price" },
+                { path: "packageId", select: "title price currency", match: { _id: { $ne: null } } }
             ]
         );
 

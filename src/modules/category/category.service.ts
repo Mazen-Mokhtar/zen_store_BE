@@ -15,7 +15,9 @@ export class CategoryService {
             throw new BadRequestException("Missing file")
         if (await this.categoryRepository.findOne({ name: body.name }))
             throw new ConflictException("name already exist")
-        let folderId = String(Math.floor(100000 + Math.random() * 900000))
+        // Use crypto for secure random number generation
+        const crypto = require('crypto');
+        let folderId = crypto.randomInt(100000, 999999).toString();
         const { secure_url, public_id } = await this.cloudService.uploadFile(file , {folder : `${process.env.APP_NAME}/Category/${folderId}`})
         const category = await this.categoryRepository.create({ 
             name: body.name, 
@@ -54,7 +56,9 @@ export class CategoryService {
     async getAllCategory(query: QueryCategoryDTO) {
         const filter: any = {};
         if (query.name) {
-            filter.name = { $regex: query.name, $options: 'i' };
+            // Sanitize regex input to prevent NoSQL injection
+            const sanitizedName = query.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            filter.name = { $regex: sanitizedName, $options: 'i' };
         }
         if (query.type) {
             filter.type = query.type;

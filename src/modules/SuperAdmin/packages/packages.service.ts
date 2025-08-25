@@ -27,7 +27,9 @@ export class SuperAdminPackagesService {
         
         // إذا كان هناك ملف مرفوع، ارفعه إلى الخدمة السحابية
         if (file) {
-            let folderId = String(Math.floor(100000 + Math.random() * 900000));
+            // Use crypto for secure random number generation
+            const crypto = require('crypto');
+            let folderId = crypto.randomInt(100000, 999999).toString();
             let folder = { folder: `${process.env.APP_NAME}/packages/photos/${folderId}` };
             
             const result = await this.cloudService.uploadFile(file, folder);
@@ -86,7 +88,9 @@ export class SuperAdminPackagesService {
             throw new NotFoundException(messageSystem.package.notFound);
         }
 
-        let folderId = String(Math.floor(100000 + Math.random() * 900000));
+        // Use crypto for secure random number generation
+        const crypto = require('crypto');
+        let folderId = crypto.randomInt(100000, 999999).toString();
         let folder = { folder: `${process.env.APP_NAME}/packages/photos/${folderId}` };
         
         const result = await this.cloudService.uploadFile(file, folder);
