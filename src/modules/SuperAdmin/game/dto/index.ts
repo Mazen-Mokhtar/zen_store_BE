@@ -70,6 +70,7 @@ export class CreateGameDto {
     price?: number;
 
     // Offer fields for Steam games
+    @IsOptional()
     @ValidateIf(o => o.type === GameType.STEAM)
     @Type(() => Boolean)
     @IsBoolean()

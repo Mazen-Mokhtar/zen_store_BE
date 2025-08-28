@@ -10,7 +10,12 @@ import { GameType } from 'src/DB/models/Game/game.schema';
 @Injectable()
 export class GameService {
     constructor(private readonly gameRepository: GameRepository, private readonly cloudService: cloudService) { }
-    async addGame(user: TUser, body: CreateGameDto, files?: Express.Multer.File[]) {
+    async addGame(user: TUser, body: CreateGameDto, files?: { 
+        image?: Express.Multer.File[], 
+        images?: Express.Multer.File[], 
+        video?: Express.Multer.File[], 
+        backgroundImage?: Express.Multer.File[] 
+    }) {
         if (!body.categoryId) throw new BadRequestException('categoryId is required');
         
         // التحقق من السعر للعاب Steam
@@ -54,45 +59,95 @@ export class GameService {
         let backgroundImage: IAttachments | undefined = undefined;
         
         // التحقق من أن الملفات المتعددة للألعاب من نوع Steam فقط
-        if (files && files.length > 1 && body.type !== GameType.STEAM) {
+        const totalFiles = (files?.image?.length || 0) + (files?.images?.length || 0) + 
+                          (files?.video?.length || 0) + (files?.backgroundImage?.length || 0);
+        
+        if (totalFiles > 1 && body.type !== GameType.STEAM) {
             throw new BadRequestException('Multiple files upload is only allowed for Steam games');
         }
         
         // معالجة الملفات المرفوعة
-        if (files && files.length > 0) {
+        if (files && totalFiles > 0) {
             // Use crypto for secure random number generation
             const crypto = require('crypto');
             let folderId = crypto.randomInt(100000, 999999).toString();
             let folder = { folder: `${process.env.APP_NAME}/games/photos/${folderId}` };
             
-            for (const file of files) {
-                const result = await this.cloudService.uploadFile(file, folder);
-                if (result.secure_url) {
-                    const attachment: IAttachments = {
-                        secure_url: result.secure_url,
-                        public_id: result.public_id,
-                    };
-                    
-                    // تحديد نوع الملف بناءً على mimetype واسم الحقل في FormData
-                    if (file.mimetype.startsWith('video/')) {
-                        video = attachment;
-                    } else if (file.mimetype.startsWith('image/')) {
-                        // التحقق من اسم الحقل في FormData لتحديد نوع الصورة
-                        const fieldName = file.fieldname;
-                        
-                        if (fieldName === 'backgroundImage') {
-                            // إذا كان اسم الحقل backgroundImage، اجعلها صورة خلفية
-                            backgroundImage = attachment;
-                        } else if (fieldName === 'image' && !image) {
-                            // إذا كان اسم الحقل image ولم يتم تعيين الصورة الرئيسية بعد
-                            image = attachment;
+            // معالجة الصورة الرئيسية
+            if (files.image && files.image.length > 0) {
+                try {
+                    const file = files.image[0];
+                    const result = await this.cloudService.uploadFile(file, folder);
+                    if (result.secure_url) {
+                        image = {
+                            secure_url: result.secure_url,
+                            public_id: result.public_id,
+                        };
+                    } else {
+                        throw new BadRequestException(messageSystem.game.failToUpload);
+                    }
+                } catch (error) {
+                    console.error('Error uploading main image:', error);
+                    throw new BadRequestException(`Failed to upload main image: ${error.message}`);
+                }
+            }
+            
+            // معالجة الصور الإضافية
+            if (files.images && files.images.length > 0) {
+                try {
+                    for (const file of files.images) {
+                        const result = await this.cloudService.uploadFile(file, folder);
+                        if (result.secure_url) {
+                            images.push({
+                                secure_url: result.secure_url,
+                                public_id: result.public_id,
+                            });
                         } else {
-                            // إضافة باقي الصور إلى مصفوفة الصور (images field أو أي حقل آخر)
-                            images.push(attachment);
+                            throw new BadRequestException(messageSystem.game.failToUpload);
                         }
                     }
-                } else {
-                    throw new BadRequestException(messageSystem.game.failToUpload);
+                } catch (error) {
+                    console.error('Error uploading additional images:', error);
+                    throw new BadRequestException(`Failed to upload additional images: ${error.message}`);
+                }
+            }
+            
+            // معالجة الفيديو
+            if (files.video && files.video.length > 0) {
+                try {
+                    const file = files.video[0];
+                    console.log(`Uploading video file: ${file.originalname}, size: ${file.size} bytes`);
+                    const result = await this.cloudService.uploadFile(file, folder);
+                    if (result.secure_url) {
+                        video = {
+                            secure_url: result.secure_url,
+                            public_id: result.public_id,
+                        };
+                    } else {
+                        throw new BadRequestException(messageSystem.game.failToUpload);
+                    }
+                } catch (error) {
+                    console.error('Error uploading video:', error);
+                    throw new BadRequestException(`Failed to upload video: ${error.message}`);
+                }
+            }
+            
+            // معالجة صورة الخلفية
+            if (files.backgroundImage && files.backgroundImage.length > 0) {
+                try {
+                    const file = files.backgroundImage[0];
+                    const result = await this.cloudService.uploadFile(file, folder);
+                    if (result.secure_url) {
+                        backgroundImage = {
+                            secure_url: result.secure_url,
+                            public_id: result.public_id,
+                        };
+                    } else {
+                        throw new BadRequestException(messageSystem.game.failToUpload);
+                    }
+                } catch (error) {
+                    console.error('Error uploading background image:', error);
+                    throw new BadRequestException(`Failed to upload background image: ${error.message}`);
                 }
             }
         }
@@ -110,6 +165,12 @@ export class GameService {
         if (body.backgroundImage) {
             backgroundImage = body.backgroundImage;
         }
+        
+        console.log('=== Final values before creating game ===');
+        console.log('image:', image);
+        console.log('images:', images);
+        console.log('video:', video);
+        console.log('backgroundImage:', backgroundImage);
         
         const newGame = await this.gameRepository.create({ 
             ...body, 

@@ -31,6 +31,58 @@ export class OrderService {
             throw new BadRequestException("Game not found or inactive");
         }
 
+        // Additional validation for Steam games - ensure required account info fields are provided
+        if (game.type === GameType.STEAM && game.accountInfoFields) {
+            // Check for missing required fields
+            const missingFields: string[] = [];
+            for (const field of game.accountInfoFields) {
+                if (field.isRequired) {
+                    const fieldExists = body.accountInfo.some(
+                        (info) => info.fieldName === field.fieldName && 
+                                 info.value && 
+                                 info.value.trim() !== ''
+                    );
+                    if (!fieldExists) {
+                        missingFields.push(field.fieldName);
+                    }
+                }
+            }
+
+            if (missingFields.length > 0) {
+                throw new BadRequestException(
+                    `Missing required account fields for Steam game: ${missingFields.join(', ')}`
+                );
+            }
+
+            // Validate email format for email fields
+            const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+            for (const info of body.accountInfo) {
+                const fieldNameLower = info.fieldName.toLowerCase();
+                if (fieldNameLower.includes('email') || fieldNameLower.includes('gmail')) {
+                    if (!emailRegex.test(info.value)) {
+                        throw new BadRequestException(
+                            `Invalid email format for field: ${info.fieldName}. Please provide a valid email address.`
+                        );
+                    }
+                }
+            }
+
+            // Check for invalid fields
+            const validFieldNames = game.accountInfoFields.map(field => field.fieldName);
+            const invalidFields: string[] = [];
+            for (const info of body.accountInfo) {
+                if (!validFieldNames.includes(info.fieldName)) {
+                    invalidFields.push(info.fieldName);
+                }
+            }
+
+            if (invalidFields.length > 0) {
+                throw new BadRequestException(
+                    `Invalid account fields for this Steam game: ${invalidFields.join(', ')}. Valid fields are: ${validFieldNames.join(', ')}`
+                );
+            }
+        }
+
         // Validation logic based on game type
         let packageItem: any = null;
         if (game.type === GameType.STEAM) {

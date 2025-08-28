@@ -14,7 +14,15 @@ export class cloudService {
     }
     
     async uploadFile(file: Express.Multer.File , {folder = process.env.APP_NAME}) {
-        return await cloudinary.uploader.upload(file.path , {folder})
+        return await cloudinary.uploader.upload(file.path , {
+            folder,
+            resource_type: "auto", // Auto-detect file type (image/video)
+            timeout: 600000, // 10 minutes timeout for large files
+            chunk_size: 6000000, // 6MB chunks for large files
+            eager_async: true, // Process transformations asynchronously
+            use_filename: true,
+            unique_filename: false
+        })
     }
     async uploadFiles(files: Express.Multer.File[]) {
         let attachments: IAttachments[] = []

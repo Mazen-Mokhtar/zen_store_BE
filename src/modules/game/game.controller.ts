@@ -25,6 +25,11 @@ export class GameController {
     return await this.gameService.getGamesWithPackagesByCategory(new Types.ObjectId(params.categoryId));
   }
 
+  @Get('steam/:gameId')
+  async getSteamGameById(@Param('gameId', MongoIdPipe) gameId: string) {
+    return this.gameService.getSteamGameById(new Types.ObjectId(gameId));
+  }
+
   @Get(':gameId')
   async getGameById(@Param('gameId', MongoIdPipe) gameId: string) {
     return this.gameService.getGameById(new Types.ObjectId(gameId));

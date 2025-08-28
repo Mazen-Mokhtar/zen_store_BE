@@ -7,9 +7,13 @@ import { ValidationPipe } from '@nestjs/common';
 import { AllExceptionsFilter } from './commen/filters/http-exception.filter';
 import helmet from 'helmet';
 import * as cookieParser from 'cookie-parser';
+import { useContainer } from 'class-validator';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  
+  // Enable class-validator to use NestJS dependency injection
+  useContainer(app.select(AppModule), { fallbackOnErrors: true });
   
   // Helmet middleware is applied globally in AppModule
   // No need to apply it here as it's configured in HelmetMiddleware
@@ -25,6 +29,10 @@ async function bootstrap() {
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     credentials: true,
   });
+  
+  // Configure Express body parser limits for large file uploads
+  app.use(express.json({ limit: '200mb' }));
+  app.use(express.urlencoded({ limit: '200mb', extended: true }));
   
   // Special middleware for Stripe webhook
   app.use("/order/webhook", express.raw({type: "application/json"}));
@@ -42,7 +50,9 @@ async function bootstrap() {
   // Global exception filter
   app.useGlobalFilters(new AllExceptionsFilter());
   
-  await app.listen(process.env.PORT ?? 3000);
+  // Configure server timeout for large file uploads
+  const server = await app.listen(process.env.PORT ?? 3000);
+  server.setTimeout(10 * 60 * 1000); // 10 minutes timeout for large file uploads
 }
 
 bootstrap();

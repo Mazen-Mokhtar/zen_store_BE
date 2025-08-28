@@ -3,6 +3,7 @@ import { IsEnum, IsMongoId, IsNumber, IsOptional, IsPositive, IsString, Matches,
 import { Types } from "mongoose";
 import { OrderStatus } from "src/DB/models/Order/order.schema";
 import { IsSteamGameValidation } from "../validators/steam-game.validator";
+import { IsValidAccountInfo } from "../validators/account-info.validator";
 
 export class AccountInfoDTO {
     @IsString()
@@ -30,6 +31,9 @@ export class CreateOrderDTO {
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => AccountInfoDTO)
+    @IsValidAccountInfo({
+        message: 'Account info validation failed. Please ensure all required fields are provided and email format is correct.'
+    })
     accountInfo: AccountInfoDTO[];
 
     @IsString()

@@ -20,7 +20,7 @@ import { RoleTypes, TUser } from 'src/DB/models/User/user.schema';
 import { Roles } from 'src/commen/Decorator/roles.decorator';
 import { AuthGuard } from 'src/commen/Guards/auth.guard';
 import { RolesGuard } from 'src/commen/Guards/role.guard';
-import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor, FileFieldsInterceptor } from '@nestjs/platform-express';
 import { cloudMulter } from 'src/commen/multer/cloud.multer';
 import { User } from 'src/commen/Decorator/user.decorator';
 import { CreateGameDto, ListGamesQueryDto, ToggleGameStatusDto, ToggleGamePopularDto, UpdateGameDto } from './dto';
@@ -31,20 +31,30 @@ import { MongoIdPipe } from 'src/commen/pipes/mongoId.pipes';
 export class GameController {
   constructor(private readonly gameService: GameService) { }
   
-  @UseInterceptors(FilesInterceptor('files', 10, cloudMulter())) // يدعم رفع حتى 10 ملفات
+  @UseInterceptors(FileFieldsInterceptor([
+    { name: 'image', maxCount: 1 },           // الصورة الرئيسية
+    { name: 'images', maxCount: 8 },          // صور إضافية (حتى 8 صور)
+    { name: 'video', maxCount: 1 },           // فيديو واحد
+    { name: 'backgroundImage', maxCount: 1 }  // صورة الخلفية
+  ], cloudMulter()))
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles([RoleTypes.SUPER_ADMIN])
+  @Roles([RoleTypes.SUPER_ADMIN, RoleTypes.ADMIN])
   @Post()
   async addGame(
     @User() user: TUser, 
     @Body() body: CreateGameDto,
-    @UploadedFiles() files?: Express.Multer.File[]
+    @UploadedFiles() files?: { 
+      image?: Express.Multer.File[], 
+      images?: Express.Multer.File[], 
+      video?: Express.Multer.File[], 
+      backgroundImage?: Express.Multer.File[] 
+    }
   ) {
     return await this.gameService.addGame(user, body, files)
   }
   // تحديث لعبة موجودة
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles([RoleTypes.SUPER_ADMIN])
+  @Roles([RoleTypes.SUPER_ADMIN , RoleTypes.ADMIN])
   @Put(':gameId')
   async updateGame(
     @User() user: TUser,
@@ -54,7 +64,7 @@ export class GameController {
     return await this.gameService.updateGame(user, body, new Types.ObjectId(gameId));
   }
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles([RoleTypes.SUPER_ADMIN])
+  @Roles([RoleTypes.SUPER_ADMIN ])
   @Delete(':gameId')
   async deleteGame(@User() user: TUser, @Param('gameId', MongoIdPipe) gameId: string) {
     return await this.gameService.deletedGame(user, new Types.ObjectId(gameId));
@@ -82,14 +92,13 @@ export class GameController {
   }
   @UseInterceptors(FileInterceptor('file', cloudMulter()))
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles([RoleTypes.SUPER_ADMIN])
+  @Roles([RoleTypes.SUPER_ADMIN , RoleTypes.ADMIN])
   @Patch(":gameId/upload-image")
   async uploadGameImage(
     @User() user: TUser,
     @Param('gameId', MongoIdPipe) gameId: string,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    console.log(file);
 
     if (!file) {
       throw new BadRequestException("File missing")

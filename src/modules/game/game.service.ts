@@ -54,7 +54,7 @@ export class GameService {
             page,
             limit,
             { createdAt: -1 },
-            { select: 'name description image offer categories isActive createdAt isPopular price accountInfoFields' }
+            { select: 'name description image offer categories isActive createdAt isPopular price accountInfoFields type' }
         );
 
         return {
@@ -84,7 +84,7 @@ export class GameService {
                         { isDeleted: { $exists: false } }
                     ]
                 },
-                { select: 'name description image offer categories isActive createdAt isPopular price accountInfoFields' },
+                { select: 'name description image offer categories isActive createdAt isPopular price accountInfoFields type' },
                 {
                     sort: { createdAt: -1 },
                     lean: true
@@ -112,7 +112,7 @@ export class GameService {
     async getGameById(gameId: Types.ObjectId) {
         const game = await this.gameRepository.findById(
             gameId,
-            { select: 'name description image offer categories isActive createdAt isPopular accountInfoFields' },
+            { select: 'name description image offer categories isActive createdAt isPopular accountInfoFields type' },
             { lean: true } // Use lean for better performance
         );
 
@@ -125,6 +125,32 @@ export class GameService {
         }
 
         return { success: true, data: game };
+    }
+
+    async getSteamGameById(gameId: Types.ObjectId) {
+        try {
+            const game = await this.gameRepository.findById(
+                gameId,
+                { 
+                    select: 'name description image images video backgroundImage isOffer categoryId isActive createdAt isPopular price accountInfoFields type' 
+                },
+                { lean: true }
+            );
+            if (!game) {
+                throw new NotFoundException(messageSystem.game.notFound);
+            }
+            // التحقق من أن اللعبة من نوع Steam
+            if (game.type !== GameType.STEAM) {
+                throw new BadRequestException('This game is not a Steam game');
+            }
+            return {
+                success: true,
+                data: game,
+            };
+        } catch (error) {
+            if (error instanceof NotFoundException || error instanceof BadRequestException) throw error;
+            throw new BadRequestException('Failed to fetch Steam game');
+        }
     }
 
     // Get only paid games (e.g., Steam games with a price) within a category
@@ -145,7 +171,7 @@ export class GameService {
                         { isDeleted: { $exists: false } }
                     ]
                 },
-                { select: 'name description image offer categories isActive createdAt isPopular price accountInfoFields' },
+                { select: 'name description image offer categories isActive createdAt isPopular price accountInfoFields type' },
                 { sort: { createdAt: -1 }, lean: true }
             );
 
@@ -179,7 +205,7 @@ export class GameService {
                         { isDeleted: { $exists: false } }
                     ]
                 },
-                { select: 'name description image isOffer categoryId isActive createdAt isPopular price accountInfoFields' },
+                { select: 'name description image isOffer categoryId isActive createdAt isPopular price accountInfoFields type' },
                 { sort: { createdAt: -1 }, lean: true }
             );
             console.log(games);
