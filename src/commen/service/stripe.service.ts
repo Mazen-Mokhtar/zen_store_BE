@@ -77,10 +77,7 @@ export class StripeService {
         let body = req.body;
         let event: any = {}
 
-        // console.log(body)
-        // console.log({req})
         let endpointSecret = process.env.STRIPE_WEBHOOK_SECRET
-        console.log(endpointSecret);
 
         if (endpointSecret) {
             // Get the signature sent by Stripe
@@ -94,7 +91,6 @@ export class StripeService {
                     endpointSecret
                 );
             } catch (err) {
-                console.error('Webhook signature verification error:', err);
                 throw new BadRequestException("⚠️  Webhook signature verification failed")
             }
         }

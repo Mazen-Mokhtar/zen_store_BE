@@ -20,7 +20,7 @@ export const sendEmail = async (data: SendMailOptions) => {
                 ...data
             });
 
-            console.log("Message sent:", info.messageId);
+        
         })();
     } catch (error) {
         throw new InternalServerErrorException(error)

@@ -82,7 +82,7 @@ userSchema.post(['find', 'findOne', 'findById'] as any, function (doc) {
     const decryptSingleDoc = (singleDoc: any) => {
         if (singleDoc && singleDoc.phone) {
             if (!process.env.PHONE_ENC) {
-                console.error('PHONE_ENC environment variable is not defined.');
+    
                 singleDoc.phone = null;
                 return;
             }
@@ -90,7 +90,7 @@ userSchema.post(['find', 'findOne', 'findById'] as any, function (doc) {
                 const decryptedBytes = CryptoJS.AES.decrypt(singleDoc.phone, process.env.PHONE_ENC);
                 singleDoc.phone = decryptedBytes.toString(CryptoJS.enc.Utf8);
             } catch (error) {
-                console.error("Decryption failed for phone number:", error);
+    
                 // Optionally set phone to null or an empty string if decryption fails
                 singleDoc.phone = null;
             }

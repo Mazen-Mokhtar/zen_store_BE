@@ -39,13 +39,13 @@ export class TokenService {
         switch (role) {
             case RoleTypes.ADMIN:
                 accessToken = process.env.SIGNATURE_ADMIN as string
+                break;
             case RoleTypes.SUPER_ADMIN:
                 accessToken = process.env.SIGNATURE_SUPER_ADMIN as string
                 break;
 
             default:
                 accessToken = process.env.SIGNATURE_USER as string
-
                 break;
         }
         refreshToken = process.env.SIGNATURE_REFRESH as string
@@ -53,10 +53,10 @@ export class TokenService {
     }
     verify(token: string, role: RoleTypes | string, type: ITokenTypes) {
         try {
-
             let tokenType: ITokenTypes = type
             let payload: IUserPayload;
             const { accessToken, refreshToken } = this.getSignature(role, type)
+            
             if (tokenType == ITokenTypes.access) {
                 payload = this.jwtService.verify(token, { secret: accessToken })
             } else if (tokenType == ITokenTypes.refresh) {

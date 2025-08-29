@@ -74,14 +74,27 @@ export class AuthService {
       role: user.role as RoleTypes,
       expiresIn: "7d"
     })
-    return { data: { accessToken: `${user.role} ${accessToken}`, refreshToken } }
+    return { 
+      data: { 
+        accessToken: `${user.role} ${accessToken}`, 
+        refreshToken,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 1 day from now
+        user: {
+          id: user._id,
+          email: user.email,
+          name: user.userName,
+          role: user.role,
+          profileImage: user.profileImage?.secure_url
+        }
+      } 
+    }
   }
   async googleLogin(idToken: string) {
     try {
-      const client = new OAuth2Client();
+      const client = new OAuth2Client( process.env.GOOGLE_CLIENT_ID);
       const ticket = await client.verifyIdToken({
         idToken,
-        audience: process.env.CLIENT_ID, // تأكد إنها متضبطة في .env
+        audience: process.env.GOOGLE_CLIENT_ID, // تأكد إنها متضبطة في .env
       });
 
       if (!ticket) {
@@ -108,18 +121,35 @@ export class AuthService {
       }
 
       const accessToken: string = this.tokenService.sign({
-        payload: { userId: user._id.toString(), role: user.role },
-        type: ITokenTypes.access,
-        role: user.role,
-        expiresIn: "1d"
-      })
-      const refreshToken: string = this.tokenService.sign({
-        payload: { userId: user._id.toString(), role: user.role },
-        type: ITokenTypes.refresh,
-        role: user.role as RoleTypes,
-        expiresIn: "7d"
-      })
-      return { data: { accessToken: `${user.role} ${accessToken}`, refreshToken } }
+      payload: { userId: user._id.toString(), role: user.role },
+      type: ITokenTypes.access,
+      role: user.role,
+      expiresIn: "1d"
+    })
+    const refreshToken: string = this.tokenService.sign({
+      payload: { userId: user._id.toString(), role: user.role },
+      type: ITokenTypes.refresh,
+      role: user.role as RoleTypes,
+      expiresIn: "7d"
+    })
+    const responseData = { 
+        data: { 
+          accessToken: `${user.role} ${accessToken}`, 
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 1 day from now
+          refreshToken,
+          user: {
+            id: user._id,
+            email: user.email,
+            name: user.userName,
+            role: user.role,
+            profileImage: user.profileImage?.secure_url
+          }
+        } 
+      };
+
+
+
+      return responseData;
 
     } catch (error) {
       throw new BadRequestException("Failed to verify Google token: " + error.message);
@@ -205,6 +235,46 @@ export class AuthService {
       expiresIn: "1d"
     })
     return { success: true, data: { accessToken } }
+  }
+  async getSession(user: TUser) {
+    try {
+      // Return current session info
+      return {
+        success: true,
+        data: {
+          user: {
+            id: user._id,
+            email: user.email,
+            name: user.userName,
+            role: user.role,
+            profileImage: user.profileImage?.secure_url
+          },
+          session: {
+            userId: user._id,
+            loginTime: new Date(),
+            isActive: true,
+            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+          }
+        }
+      };
+    } catch (error) {
+      throw new BadRequestException('Failed to get session info');
+    }
+  }
+
+  async logout(user: TUser) {
+    try {
+      // In a real implementation, you might want to blacklist the token
+      // or store logout information in database
+      return {
+        success: true,
+        data: {
+          message: 'Logged out successfully'
+        }
+      };
+    } catch (error) {
+      throw new BadRequestException('Failed to logout');
+    }
   }
 }
 

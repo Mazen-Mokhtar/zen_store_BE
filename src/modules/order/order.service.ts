@@ -213,8 +213,7 @@ export class OrderService {
 
     async webhook(req: Request) {
         const data = await this.stripeService.webhook(req);
-        console.log({data});
-        console.log(typeof data);
+
         if (typeof data === 'string') {
             return "Done";
         } else {

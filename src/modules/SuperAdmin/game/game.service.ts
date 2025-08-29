@@ -87,7 +87,7 @@ export class GameService {
                         throw new BadRequestException(messageSystem.game.failToUpload);
                     }
                 } catch (error) {
-                    console.error('Error uploading main image:', error);
+    
                     throw new BadRequestException(`Failed to upload main image: ${error.message}`);
                 }
             }
@@ -107,7 +107,7 @@ export class GameService {
                         }
                     }
                 } catch (error) {
-                    console.error('Error uploading additional images:', error);
+    
                     throw new BadRequestException(`Failed to upload additional images: ${error.message}`);
                 }
             }
@@ -116,7 +116,7 @@ export class GameService {
             if (files.video && files.video.length > 0) {
                 try {
                     const file = files.video[0];
-                    console.log(`Uploading video file: ${file.originalname}, size: ${file.size} bytes`);
+        
                     const result = await this.cloudService.uploadFile(file, folder);
                     if (result.secure_url) {
                         video = {
@@ -127,7 +127,7 @@ export class GameService {
                         throw new BadRequestException(messageSystem.game.failToUpload);
                     }
                 } catch (error) {
-                    console.error('Error uploading video:', error);
+    
                     throw new BadRequestException(`Failed to upload video: ${error.message}`);
                 }
             }
@@ -146,7 +146,7 @@ export class GameService {
                         throw new BadRequestException(messageSystem.game.failToUpload);
                     }
                 } catch (error) {
-                    console.error('Error uploading background image:', error);
+    
                     throw new BadRequestException(`Failed to upload background image: ${error.message}`);
                 }
             }
@@ -166,11 +166,7 @@ export class GameService {
             backgroundImage = body.backgroundImage;
         }
         
-        console.log('=== Final values before creating game ===');
-        console.log('image:', image);
-        console.log('images:', images);
-        console.log('video:', video);
-        console.log('backgroundImage:', backgroundImage);
+
         
         const newGame = await this.gameRepository.create({ 
             ...body, 

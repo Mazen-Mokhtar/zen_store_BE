@@ -29,7 +29,7 @@ export class CategoryService {
         return { data: category }
     }
     async update(params: ParamCategoryDTO, body?: UpdateCategoryDTO, file?: Express.Multer.File) {
-        log(body)
+
         const category = await this.categoryRepository.findById(params.categoryId);
         if (!category)
             throw new BadRequestException("In-valid-category_Id");
@@ -43,7 +43,7 @@ export class CategoryService {
             logo = { secure_url, public_id }
         }
         const check = await this.categoryRepository.updateOne({ _id: category }, { name: body?.name, type: body?.type, logo: logo })
-        log(check)
+
         return { messgae: "Category updated successffuly" }
     }
     async getCategory(params: ParamCategoryDTO) {

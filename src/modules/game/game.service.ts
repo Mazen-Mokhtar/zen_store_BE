@@ -47,7 +47,7 @@ export class GameService {
 
         const page = query.page || 1;
         const limit = query.limit || 10;
-        console.log(filter);
+
 
         const result = await this.gameRepository.paginate(
             filter,
@@ -194,7 +194,7 @@ export class GameService {
             if (!category) {
                 throw new NotFoundException('Category not found');
             }
-            console.log(categoryId);
+    
             const games = await this.gameRepository.find(
                 {
                     categoryId : categoryId,
@@ -208,7 +208,7 @@ export class GameService {
                 { select: 'name description image isOffer categoryId isActive createdAt isPopular price accountInfoFields type' },
                 { sort: { createdAt: -1 }, lean: true }
             );
-            console.log(games);
+    
             return {
                 success: true,
                 data: games,

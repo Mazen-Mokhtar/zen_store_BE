@@ -13,7 +13,7 @@ export class AuthController {
 
   @Post("signup")
   async signup(@Body() signupDTO: SignupDTO) {
-    log(signupDTO)
+
     const data = await this.AuthService.signup(signupDTO)
     return { message: "success", data }
   }
@@ -63,4 +63,19 @@ export class AuthController {
   async refreshToken(@Body() refreshTokenDTO: RefreshTokenDTO) {
     return await this.AuthService.refreshToken(refreshTokenDTO.refreshToken);
   }
+
+  @HttpCode(200)
+  @UseGuards(AuthGuard)
+  @Get('session')
+  async getSession(@User() user: TUser) {
+    return await this.AuthService.getSession(user);
+  }
+
+  @HttpCode(200)
+  @UseGuards(AuthGuard)
+  @Post('logout')
+  async logout(@User() user: TUser) {
+    return await this.AuthService.logout(user);
+  }
+
 }
