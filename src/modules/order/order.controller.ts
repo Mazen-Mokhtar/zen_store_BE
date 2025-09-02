@@ -1,14 +1,16 @@
-import { Body, Controller, Get, Param, Patch, Post, Req, UseGuards, UsePipes, ValidationPipe, Query } from "@nestjs/common";
+import { Body, Controller, Get, Param, Patch, Post, Req, UseGuards, UsePipes, ValidationPipe, Query, UseInterceptors, UploadedFile } from "@nestjs/common";
+import { FileInterceptor } from '@nestjs/platform-express';
 import { OrderService } from './order.service';
 import { User } from "src/commen/Decorator/user.decorator";
 import { TUser } from "src/DB/models/User/user.schema";
-import { CreateOrderDTO, OrderIdDTO, UpdateOrderStatusDTO, AdminOrderQueryDTO } from "./dto";
+import { CreateOrderDTO, OrderIdDTO, UpdateOrderStatusDTO, AdminOrderQueryDTO, WalletTransferDTO, WalletTransferImageDTO } from "./dto";
 import { Roles } from "src/commen/Decorator/roles.decorator";
 import { AuthGuard } from "src/commen/Guards/auth.guard";
 import { RolesGuard } from "src/commen/Guards/role.guard";
 import { Request } from "express";
 import { Types } from "mongoose";
 import { RoleTypes } from "src/DB/models/User/user.schema";
+import { cloudMulter } from "src/commen/multer/cloud.multer";
 
 @UsePipes(new ValidationPipe({ whitelist: false }))
 @Controller("order")
@@ -83,5 +85,37 @@ export class OrderController {
     async updateOrderStatus(@User() admin: TUser, @Param() params: OrderIdDTO, @Body() body: UpdateOrderStatusDTO) {
         const orderId = new Types.ObjectId(params.orderId);
         return await this.orderService.updateOrderStatus(admin, orderId, body);
+    }
+
+    // Wallet Transfer Endpoints
+
+    @Post(":orderId/wallet-transfer")
+    @UseGuards(AuthGuard)
+    @UseInterceptors(FileInterceptor('walletTransferImage', cloudMulter()))
+    async submitWalletTransfer(
+        @User() user: TUser,
+        @Param() params: OrderIdDTO,
+        @Body() walletTransferData: WalletTransferDTO,
+        @UploadedFile() file: Express.Multer.File
+    ) {
+        return await this.orderService.submitWalletTransfer(
+            user,
+            new Types.ObjectId(params.orderId),
+            walletTransferData,
+            file
+        );
+    }
+
+    @Get("admin/:orderId/wallet-transfer")
+    @Roles([RoleTypes.ADMIN, RoleTypes.SUPER_ADMIN])
+    @UseGuards(AuthGuard, RolesGuard)
+    async getWalletTransferDetails(
+        @User() admin: TUser,
+        @Param() params: OrderIdDTO
+    ) {
+        return await this.orderService.getWalletTransferDetails(
+            admin,
+            new Types.ObjectId(params.orderId)
+        );
     }
 }

@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { HydratedDocument, Types } from "mongoose";
 import { GameDocument } from "../Game/game.schema";
+import { PaymentMethod } from "src/modules/order/enums/payment-method.enum";
 export enum OrderStatus {
   PENDING = 'pending',
   PAID = 'paid',
@@ -30,8 +31,8 @@ export class Order {
   @Prop({ type: String })
   adminNote: string;
 
-  @Prop({ type: String, required: true })
-  paymentMethod: string;
+  @Prop({ type: String, enum: PaymentMethod , required: true })
+  paymentMethod: PaymentMethod;
 
   @Prop({ type: Number, required: true })
   totalAmount: number;
@@ -50,6 +51,31 @@ export class Order {
 
   @Prop({ type: String })
   intent: string; // Stripe payment intent ID
+
+  // Wallet Transfer Fields
+  @Prop({ 
+    type: {
+      secure_url: String,
+      public_id: String
+    },
+    required: false 
+  })
+  walletTransferImage?: {
+    secure_url: string;
+    public_id: string;
+  };
+
+  @Prop({ type: String, required: false })
+  walletTransferNumber: string; // Wallet transfer number (encrypted) - minimum 3 digits
+
+  @Prop({ type: Date })
+  walletTransferSubmittedAt: Date;
+
+  @Prop({ type: String, required: false })
+  nameOfInsta: string; // Instagram name (encrypted) - for insta-transfer payment method
+
+  @Prop({ type: Date })
+  instaTransferSubmittedAt: Date;
 }
 
 

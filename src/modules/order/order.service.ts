@@ -1,18 +1,23 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { OrderRepository } from "src/DB/models/Order/order.repository";
 import { GameRepository } from "src/DB/models/Game/game.repository";
 import { PackageRepository } from "src/DB/models/Packages/packages.repository";
 import { TUser } from "src/DB/models/User/user.schema";
-import { CreateOrderDTO, OrderIdDTO, UpdateOrderStatusDTO, AdminOrderQueryDTO } from "./dto";
+import { CreateOrderDTO, OrderIdDTO, UpdateOrderStatusDTO, AdminOrderQueryDTO, WalletTransferDTO } from "./dto";
 import { OrderStatus } from "src/DB/models/Order/order.schema";
 import { GameType } from "src/DB/models/Game/game.schema";
 import { Types } from "mongoose";
 import { StripeService } from "src/commen/service/stripe.service";
 import { Request } from "express";
 import { RoleTypes } from "src/DB/models/User/user.schema";
+import { EncryptionService } from "src/commen/service/encryption.service";
+import { cloudService, IAttachments } from "src/commen/multer/cloud.service";
 
 @Injectable()
 export class OrderService {
+    private readonly cloudService = new cloudService();
+    private readonly encryptionService = new EncryptionService();
+
     constructor(
         private readonly orderRepository: OrderRepository,
         private readonly gameRepository: GameRepository,
@@ -400,5 +405,172 @@ export class OrderService {
                 totalRevenue: totalRevenue[0]?.total || 0
             }
         };
+    }
+
+    /**
+     * Upload wallet transfer image and submit transfer details
+     * @param user - The user submitting the wallet transfer
+     * @param orderId - The order ID
+     * @param walletTransferData - Wallet transfer details
+     * @param file - The uploaded wallet transfer image
+     * @returns Updated order with wallet transfer information
+     */
+    async submitWalletTransfer(
+        user: TUser,
+        orderId: Types.ObjectId,
+        walletTransferData: WalletTransferDTO,
+        file: Express.Multer.File
+    ) {
+        // Validate order exists and belongs to user
+        const order = await this.orderRepository.findOne({
+            _id: orderId,
+            userId: user._id,
+            paymentMethod: { $in: ['wallet-transfer', 'insta-transfer', 'fawry-transfer'] },
+            status: OrderStatus.PENDING
+        });
+
+        if (!order) {
+            throw new NotFoundException('Order not found or not eligible for wallet transfer');
+        }
+
+        // Validate nameOfInsta based on payment method
+        if (order.paymentMethod === 'insta-transfer') {
+            if (!walletTransferData.nameOfInsta || walletTransferData.nameOfInsta.trim().length === 0) {
+                throw new BadRequestException('Instagram name is required for insta-transfer payment method');
+            }
+        } else {
+            if (walletTransferData.nameOfInsta) {
+                throw new BadRequestException('Instagram name should not be provided for non-insta-transfer payment methods');
+            }
+        }
+
+        // Validate file type and size
+        if (!file) {
+            throw new BadRequestException('Wallet transfer image is required');
+        }
+
+        try {
+            // Generate folder ID for organizing uploads
+            const folderId = `wallet-transfer-${orderId}`;
+
+            // Upload image to cloud storage
+            const uploadResult = await this.cloudService.uploadFile(
+                file,
+                { folder: `orders/${folderId}` }
+            );
+
+            // Encrypt the wallet transfer number
+            const encryptedNumber = this.encryptionService.encrypt(walletTransferData.walletTransferNumber);
+            
+            // Prepare update data
+            const updateData: any = {
+                walletTransferImage: {
+                    secure_url: uploadResult.secure_url,
+                    public_id: uploadResult.public_id
+                },
+                walletTransferNumber: encryptedNumber,
+                walletTransferSubmittedAt: new Date()
+            };
+            
+            // If it's insta-transfer, encrypt and save nameOfInsta
+            if (order.paymentMethod === 'insta-transfer' && walletTransferData.nameOfInsta) {
+                updateData.nameOfInsta = this.encryptionService.encrypt(walletTransferData.nameOfInsta);
+                updateData.instaTransferSubmittedAt = new Date();
+            }
+
+            // Update order with wallet transfer information
+            const updatedOrder = await this.orderRepository.findByIdAndUpdate(
+                orderId,
+                { $set: updateData },
+                { new: true }
+            );
+
+            if (!updatedOrder) {
+                throw new BadRequestException('Failed to update order with wallet transfer details');
+            }
+
+            const responseData: any = {
+                orderId: updatedOrder._id,
+                status: updatedOrder.status,
+                walletTransferSubmittedAt: updatedOrder.walletTransferSubmittedAt,
+                maskedNumber: this.encryptionService.maskData(
+                    walletTransferData.walletTransferNumber,
+                    3
+                )
+            };
+            
+            // Add masked Instagram name if it's insta-transfer
+            if (order.paymentMethod === 'insta-transfer' && walletTransferData.nameOfInsta) {
+                responseData.maskedInstaName = this.encryptionService.maskData(
+                    walletTransferData.nameOfInsta,
+                    2
+                );
+                responseData.instaTransferSubmittedAt = updatedOrder.instaTransferSubmittedAt;
+            }
+            
+            return {
+                success: true,
+                message: 'Transfer details submitted successfully. Your order is being reviewed.',
+                data: responseData
+            };
+        } catch (error) {
+            throw new BadRequestException(`Failed to submit wallet transfer: ${error.message}`);
+        }
+    }
+
+    /**
+     * Get wallet transfer details for admin review
+     * @param admin - The admin user
+     * @param orderId - The order ID
+     * @returns Decrypted wallet transfer details
+     */
+    async getWalletTransferDetails(admin: TUser, orderId: Types.ObjectId) {
+        // Verify admin permissions
+        if (admin.role !== RoleTypes.ADMIN && admin.role !== RoleTypes.SUPER_ADMIN) {
+            throw new BadRequestException('Insufficient permissions');
+        }
+
+        const order = await this.orderRepository.findOne({
+            _id: orderId,
+            paymentMethod: { $in: ['wallet-transfer', 'insta-transfer'] },
+            walletTransferNumber: { $exists: true }
+        });
+        
+        if (!order) {
+            throw new NotFoundException('Wallet transfer order not found');
+        }
+
+        if (!order.walletTransferNumber) {
+            throw new BadRequestException('Wallet transfer number not found');
+        }
+
+        try {
+            // Decrypt the wallet transfer number for admin review
+            const decryptedNumber = this.encryptionService.decrypt(order.walletTransferNumber);
+            
+            const responseData: any = {
+                orderId: order._id,
+                userId: order.userId,
+                paymentMethod: order.paymentMethod,
+                walletTransferImage: order.walletTransferImage,
+                walletTransferNumber: decryptedNumber,
+                walletTransferSubmittedAt: order.walletTransferSubmittedAt,
+                orderStatus: order.status,
+                totalAmount: order.totalAmount
+            };
+            
+            // Add decrypted Instagram name if it's insta-transfer
+            if (order.paymentMethod === 'insta-transfer' && order.nameOfInsta) {
+                responseData.nameOfInsta = this.encryptionService.decrypt(order.nameOfInsta);
+                responseData.instaTransferSubmittedAt = order.instaTransferSubmittedAt;
+            }
+
+            return {
+                success: true,
+                data: responseData
+            };
+        } catch (error) {
+            throw new BadRequestException(`Failed to retrieve transfer details: ${error.message}`);
+        }
     }
 }

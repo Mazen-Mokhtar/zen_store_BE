@@ -13,7 +13,7 @@ export const SecurityConfig = {
   // Rate Limiting
   rateLimit: {
     windowMs: 15 * 60 * 1000,  // 15 minutes
-    maxRequests: 100,          // Max requests per window
+    maxRequests: 150,         // Max requests per window
     message: 'Too many requests, please try again later.',
   },
   
