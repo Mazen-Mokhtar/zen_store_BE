@@ -6,7 +6,7 @@ import * as express from "express"
 import { ValidationPipe } from '@nestjs/common';
 import { AllExceptionsFilter } from './commen/filters/http-exception.filter';
 import helmet from 'helmet';
-import * as cookieParser from 'cookie-parser';
+import cookieParser from 'cookie-parser';
 import { useContainer } from 'class-validator';
 
 async function bootstrap() {

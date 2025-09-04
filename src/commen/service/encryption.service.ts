@@ -89,16 +89,51 @@ export class EncryptionService {
   /**
    * Mask sensitive data for display purposes
    * @param data - The data to mask
-   * @param visibleChars - Number of characters to show at the end
-   * @returns Masked string
+   * @param dataType - Type of data ('phone' or 'instagram')
+   * @returns Masked string or original data based on rules
    */
-  maskData(data: string, visibleChars: number = 3): string {
-    if (!data || data.length <= visibleChars) {
-      return '*'.repeat(data?.length || 0);
+  maskData(data: string, dataType: 'phone' | 'instagram' = 'phone'): string {
+    if (!data) {
+      return '';
     }
     
-    const maskedPart = '*'.repeat(data.length - visibleChars);
-    const visiblePart = data.slice(-visibleChars);
+    // Rule 1: No masking for Instagram names
+    if (dataType === 'instagram') {
+      return data;
+    }
+    
+    // Rule 2: No masking for phone numbers with exactly 3 digits
+    if (dataType === 'phone' && data.length === 3) {
+      return data;
+    }
+    
+    // Rule 3: For phone numbers with 10 or more digits
+    if (dataType === 'phone' && data.length >= 10) {
+      // Show first 4 digits, mask digits 4, 5, 6 (positions 3, 4, 5 in 0-based index), show last 3 digits
+      const firstPart = data.slice(0, 4); // First 4 digits
+      const lastPart = data.slice(-3); // Last 3 digits
+      const middlePart = data.slice(4, -3); // Everything between first 4 and last 3
+      
+      // Mask only positions 4, 5, 6 (which are indices 3, 4, 5 in the middle part after first 4)
+      let maskedMiddle = '';
+      for (let i = 0; i < middlePart.length; i++) {
+        if (i === 0 || i === 1 || i === 2) { // Positions 4, 5, 6 relative to original string
+          maskedMiddle += '*';
+        } else {
+          maskedMiddle += middlePart[i];
+        }
+      }
+      
+      return firstPart + maskedMiddle + lastPart;
+    }
+    
+    // Default behavior for other cases (less than 10 digits, more than 3)
+    if (data.length <= 3) {
+      return '*'.repeat(data.length);
+    }
+    
+    const maskedPart = '*'.repeat(data.length - 3);
+    const visiblePart = data.slice(-3);
     
     return maskedPart + visiblePart;
   }

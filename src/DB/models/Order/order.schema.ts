@@ -2,6 +2,7 @@ import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { HydratedDocument, Types } from "mongoose";
 import { GameDocument } from "../Game/game.schema";
 import { PaymentMethod } from "src/modules/order/enums/payment-method.enum";
+import { EncryptionService } from "../../../commen/service/encryption.service";
 export enum OrderStatus {
   PENDING = 'pending',
   PAID = 'paid',
@@ -82,6 +83,60 @@ export class Order {
 export const orderSchema = SchemaFactory.createForClass(Order)
 
 export type OrderDocument = HydratedDocument<Order>
+
+// Post-find hook for decryption/masking of wallet transfer data
+orderSchema.post(['find', 'findOne', 'findById'] as any, function (doc) {
+  const encryptionService = new EncryptionService();
+  
+  // Check if this is an admin request by looking at the query context
+  // This is a simple approach - in production you might want to pass user context differently
+  const isAdminRequest = (this as any).getOptions()?.isAdminRequest || false;
+  
+  const processWalletData = (singleDoc: any) => {
+    if (singleDoc && singleDoc.walletTransferNumber) {
+      try {
+        const decryptedNumber = encryptionService.decrypt(singleDoc.walletTransferNumber);
+        
+        if (isAdminRequest) {
+          // For admin: show decrypted data
+          singleDoc.walletTransferNumber = decryptedNumber;
+        } else {
+          // For regular users: show masked data based on new rules
+          singleDoc.walletTransferNumber = encryptionService.maskData(decryptedNumber, 'phone');
+        }
+      } catch (error) {
+        // If decryption fails, keep the encrypted value or set to null
+        console.warn('Failed to decrypt walletTransferNumber:', error.message);
+      }
+    }
+    
+    if (singleDoc && singleDoc.nameOfInsta) {
+      try {
+        const decryptedInsta = encryptionService.decrypt(singleDoc.nameOfInsta);
+        
+        if (isAdminRequest) {
+          // For admin: show decrypted data
+          singleDoc.nameOfInsta = decryptedInsta;
+        } else {
+          // For regular users: no masking for Instagram names
+          singleDoc.nameOfInsta = encryptionService.maskData(decryptedInsta, 'instagram');
+        }
+      } catch (error) {
+        // If decryption fails, keep the encrypted value or set to null
+        console.warn('Failed to decrypt nameOfInsta:', error.message);
+      }
+    }
+  };
+
+  if (Array.isArray(doc)) {
+    // If it's an array of documents (e.g., from find())
+    doc.forEach(processWalletData);
+  } else {
+    // If it's a single document (e.g., from findOne(), findById())
+    processWalletData(doc);
+  }
+});
+
 // Pre-save middleware to validate accountInfo against gameAccountTypes
 orderSchema.pre('save', async function (next) {
   try {

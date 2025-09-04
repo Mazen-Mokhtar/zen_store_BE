@@ -306,7 +306,7 @@ export class OrderService {
         const data = await this.orderRepository.findWithPopulate(
             filter,
             "",
-            { sort: query.sort || { createdAt: -1 } },
+            { sort: query.sort || { createdAt: -1 }, isAdminRequest: true },
             query.page,
             [
                 { path: "userId", select: "name email phone" },
@@ -322,7 +322,7 @@ export class OrderService {
         const order = await this.orderRepository.findByIdWithPopulate(
             orderId, 
             "", 
-            {},
+            { isAdminRequest: true },
             [
                 { path: "userId", select: "name email phone" },
                 { path: "gameId", select: "name description image type price" },
@@ -495,7 +495,7 @@ export class OrderService {
                 walletTransferSubmittedAt: updatedOrder.walletTransferSubmittedAt,
                 maskedNumber: this.encryptionService.maskData(
                     walletTransferData.walletTransferNumber,
-                    3
+                    'phone'
                 )
             };
             
@@ -503,7 +503,7 @@ export class OrderService {
             if (order.paymentMethod === 'insta-transfer' && walletTransferData.nameOfInsta) {
                 responseData.maskedInstaName = this.encryptionService.maskData(
                     walletTransferData.nameOfInsta,
-                    2
+                    'instagram'
                 );
                 responseData.instaTransferSubmittedAt = updatedOrder.instaTransferSubmittedAt;
             }
@@ -534,7 +534,7 @@ export class OrderService {
             _id: orderId,
             paymentMethod: { $in: ['wallet-transfer', 'insta-transfer'] },
             walletTransferNumber: { $exists: true }
-        });
+        }, {}, { isAdminRequest: true });
         
         if (!order) {
             throw new NotFoundException('Wallet transfer order not found');
