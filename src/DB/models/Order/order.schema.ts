@@ -8,6 +8,7 @@ export enum OrderStatus {
   PAID = 'paid',
   DELIVERED = 'delivered',
   REJECTED = 'rejected',
+  PROCESSING = 'processing',
 }
 @Schema({ timestamps: true })
 export class Order {

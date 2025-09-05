@@ -469,7 +469,8 @@ export class OrderService {
                     public_id: uploadResult.public_id
                 },
                 walletTransferNumber: encryptedNumber,
-                walletTransferSubmittedAt: new Date()
+                walletTransferSubmittedAt: new Date(),
+                status: OrderStatus.PROCESSING,
             };
             
             // If it's insta-transfer, encrypt and save nameOfInsta
