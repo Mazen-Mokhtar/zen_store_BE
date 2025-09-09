@@ -1,0 +1,395 @@
+{
+	"info": {
+		"_postman_id": "YOUR_POSTMAN_COLLECTION_ID",
+		"name": "ZenStore Order APIs",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Get Order Stats (Admin)",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{admin_token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/order/admin/stats",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"order",
+						"admin",
+						"stats"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get User Orders",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{user_token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/order",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"order"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get All Orders (Admin)",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{admin_token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/order/admin/all?page=1&limit=10",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"order",
+						"admin",
+						"all"
+					],
+					"query": [
+						{
+							"key": "page",
+							"value": "1"
+						},
+						{
+							"key": "limit",
+							"value": "10"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Order",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{user_token}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"gameId\": \"65b8e8e8e8e8e8e8e8e8e8e8\",\n    \"quantity\": 1,\n    \"paymentMethod\": \"wallet\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/order",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"order"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Order Webhook",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"status\": \"success\",\n    \"orderId\": \"65b8e8e8e8e8e8e8e8e8e8e8\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/order/webhook",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"order",
+						"webhook"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Checkout Order",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{user_token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/order/:orderId/checkout",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"order",
+						":orderId",
+						"checkout"
+					],
+					"variable": [
+						{
+							"key": "orderId",
+							"value": "65b8e8e8e8e8e8e8e8e8e8e8"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Cancel Order (Super Admin)",
+			"request": {
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{super_admin_token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/order/:orderId/cancel",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"order",
+						":orderId",
+						"cancel"
+					],
+					"variable": [
+						{
+							"key": "orderId",
+							"value": "65b8e8e8e8e8e8e8e8e8e8e8"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Order Details",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{user_token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/order/:orderId",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"order",
+						":orderId"
+					],
+					"variable": [
+						{
+							"key": "orderId",
+							"value": "65b8e8e8e8e8e8e8e8e8e8e8"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Order By Id (Admin)",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{admin_token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/order/admin/:orderId",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"order",
+						"admin",
+						":orderId"
+					],
+					"variable": [
+						{
+							"key": "orderId",
+							"value": "65b8e8e8e8e8e8e8e8e8e8e8"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update Order Status (Admin)",
+			"request": {
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{admin_token}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"status\": \"completed\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/order/admin/:orderId/status",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"order",
+						"admin",
+						":orderId",
+						"status"
+					],
+					"variable": [
+						{
+							"key": "orderId",
+							"value": "65b8e8e8e8e8e8e8e8e8e8e8"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Submit Wallet Transfer",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{user_token}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "multipart/form-data"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "walletTransferImage",
+							"type": "file",
+							"src": "/path/to/your/image.jpg"
+						},
+						{
+							"key": "amount",
+							"value": "100",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{base_url}}/order/:orderId/wallet-transfer",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"order",
+						":orderId",
+						"wallet-transfer"
+					],
+					"variable": [
+						{
+							"key": "orderId",
+							"value": "65b8e8e8e8e8e8e8e8e8e8e8"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Wallet Transfer Details (Admin)",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{admin_token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/order/admin/:orderId/wallet-transfer",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"order",
+						"admin",
+						":orderId",
+						"wallet-transfer"
+					],
+					"variable": [
+						{
+							"key": "orderId",
+							"value": "65b8e8e8e8e8e8e8e8e8e8e8"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

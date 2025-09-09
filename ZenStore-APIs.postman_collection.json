@@ -1,0 +1,84 @@
+{
+  "info": {
+    "_postman_id": "zenstore-apis-collection-id",
+    "name": "ZenStore APIs",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "ZenStore API endpoints organized by module."
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        { "name": "Signup", "request": { "method": "POST", "header": [], "body": { "mode": "raw", "raw": "{\n  \"email\": \"\",\n  \"password\": \"\"\n}" }, "url": { "raw": "/auth/signup", "host": ["{{baseUrl}}"], "path": ["auth", "signup"] } } },
+        { "name": "Confirm Email", "request": { "method": "POST", "header": [], "body": { "mode": "raw", "raw": "{\n  \"code\": \"\"\n}" }, "url": { "raw": "/auth/confirm-email", "host": ["{{baseUrl}}"], "path": ["auth", "confirm-email"] } } },
+        { "name": "Login", "request": { "method": "POST", "header": [], "body": { "mode": "raw", "raw": "{\n  \"email\": \"\",\n  \"password\": \"\"\n}" }, "url": { "raw": "/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] } } },
+        { "name": "Resend Code", "request": { "method": "POST", "header": [], "body": { "mode": "raw", "raw": "{\n  \"email\": \"\"\n}" }, "url": { "raw": "/auth/resend-code", "host": ["{{baseUrl}}"], "path": ["auth", "resend-code"] } } },
+        { "name": "Google Login", "request": { "method": "POST", "header": [], "body": { "mode": "raw", "raw": "{\n  \"idToken\": \"\"\n}" }, "url": { "raw": "/auth/google-login", "host": ["{{baseUrl}}"], "path": ["auth", "google-login"] } } },
+        { "name": "Forget Password", "request": { "method": "POST", "header": [], "body": { "mode": "raw", "raw": "{\n  \"email\": \"\"\n}" }, "url": { "raw": "/auth/forget-password", "host": ["{{baseUrl}}"], "path": ["auth", "forget-password"] } } },
+        { "name": "Confirm Forget Password", "request": { "method": "POST", "header": [], "body": { "mode": "raw", "raw": "{\n  \"code\": \"\",\n  \"newPassword\": \"\"\n}" }, "url": { "raw": "/auth/confirm-forget-password", "host": ["{{baseUrl}}"], "path": ["auth", "confirm-forget-password"] } } },
+        { "name": "Reset Password", "request": { "method": "POST", "header": [], "body": { "mode": "raw", "raw": "{\n  \"token\": \"\",\n  \"newPassword\": \"\"\n}" }, "url": { "raw": "/auth/reset-password", "host": ["{{baseUrl}}"], "path": ["auth", "reset-password"] } } },
+        { "name": "Freeze Account", "request": { "method": "POST", "header": [], "url": { "raw": "/auth/freeze-account", "host": ["{{baseUrl}}"], "path": ["auth", "freeze-account"] } } },
+        { "name": "Refresh Token", "request": { "method": "POST", "header": [], "body": { "mode": "raw", "raw": "{\n  \"refreshToken\": \"\"\n}" }, "url": { "raw": "/auth/refresh-token", "host": ["{{baseUrl}}"], "path": ["auth", "refresh-token"] } } }
+      ]
+    },
+    {
+      "name": "User",
+      "item": [
+        { "name": "Get Profile", "request": { "method": "GET", "header": [], "url": { "raw": "/user/profile", "host": ["{{baseUrl}}"], "path": ["user", "profile"] } } }
+      ]
+    },
+    {
+      "name": "Category",
+      "item": [
+        { "name": "List Categories", "request": { "method": "GET", "header": [], "url": { "raw": "/category", "host": ["{{baseUrl}}"], "path": ["category"] } } },
+        { "name": "Get Category By ID", "request": { "method": "GET", "header": [], "url": { "raw": "/category/:id", "host": ["{{baseUrl}}"], "path": ["category", ":id"] } } },
+        { "name": "Create Category", "request": { "method": "POST", "header": [], "body": { "mode": "raw", "raw": "{\n  \"name\": \"\"\n}" }, "url": { "raw": "/category", "host": ["{{baseUrl}}"], "path": ["category"] } } },
+        { "name": "Update Category", "request": { "method": "PUT", "header": [], "body": { "mode": "raw", "raw": "{\n  \"name\": \"\"\n}" }, "url": { "raw": "/category/:id", "host": ["{{baseUrl}}"], "path": ["category", ":id"] } } },
+        { "name": "Delete Category", "request": { "method": "DELETE", "header": [], "url": { "raw": "/category/:id", "host": ["{{baseUrl}}"], "path": ["category", ":id"] } } }
+      ]
+    },
+    {
+      "name": "Game",
+      "item": [
+        { "name": "List Games", "request": { "method": "GET", "header": [], "url": { "raw": "/game", "host": ["{{baseUrl}}"], "path": ["game"] } } },
+        { "name": "Get Game By ID", "request": { "method": "GET", "header": [], "url": { "raw": "/game/:gameId", "host": ["{{baseUrl}}"], "path": ["game", ":gameId"] } } }
+      ]
+    },
+    {
+      "name": "Packages",
+      "item": [
+        { "name": "List Packages", "request": { "method": "GET", "header": [], "url": { "raw": "/packages", "host": ["{{baseUrl}}"], "path": ["packages"] } } },
+        { "name": "Get Package By ID", "request": { "method": "GET", "header": [], "url": { "raw": "/packages/:id", "host": ["{{baseUrl}}"], "path": ["packages", ":id"] } } }
+      ]
+    },
+    {
+      "name": "SuperAdmin",
+      "item": [
+        {
+          "name": "Game Dashboard",
+          "item": [
+            { "name": "Add Game", "request": { "method": "POST", "header": [], "body": { "mode": "raw", "raw": "{\n  \"name\": \"\"\n}" }, "url": { "raw": "/game/dashboard", "host": ["{{baseUrl}}"], "path": ["game", "dashboard"] } } },
+            { "name": "Update Game", "request": { "method": "PUT", "header": [], "body": { "mode": "raw", "raw": "{\n  \"name\": \"\"\n}" }, "url": { "raw": "/game/dashboard/:gameId", "host": ["{{baseUrl}}"], "path": ["game", "dashboard", ":gameId"] } } },
+            { "name": "Delete Game", "request": { "method": "DELETE", "header": [], "url": { "raw": "/game/dashboard/:gameId", "host": ["{{baseUrl}}"], "path": ["game", "dashboard", ":gameId"] } } },
+            { "name": "Toggle Game Status", "request": { "method": "PATCH", "header": [], "body": { "mode": "raw", "raw": "{\n  \"isActive\": true\n}" }, "url": { "raw": "/game/dashboard/:gameId/status", "host": ["{{baseUrl}}"], "path": ["game", "dashboard", ":gameId", "status"] } } },
+            { "name": "List Games (Dashboard)", "request": { "method": "GET", "header": [], "url": { "raw": "/game/dashboard", "host": ["{{baseUrl}}"], "path": ["game", "dashboard"] } } },
+            { "name": "Upload Game Image", "request": { "method": "PATCH", "header": [], "body": { "mode": "formdata", "formdata": [ { "key": "file", "type": "file", "src": "" } ] }, "url": { "raw": "/game/dashboard/:gameId/upload-image", "host": ["{{baseUrl}}"], "path": ["game", "dashboard", ":gameId", "upload-image"] } } }
+          ]
+        },
+        {
+          "name": "Packages Dashboard",
+          "item": [
+            { "name": "Create Package", "request": { "method": "POST", "header": [], "body": { "mode": "raw", "raw": "{\n  \"name\": \"\"\n}" }, "url": { "raw": "/packages/dashboard", "host": ["{{baseUrl}}"], "path": ["packages", "dashboard"] } } },
+            { "name": "Update Package", "request": { "method": "PATCH", "header": [], "body": { "mode": "raw", "raw": "{\n  \"name\": \"\"\n}" }, "url": { "raw": "/packages/dashboard/:id", "host": ["{{baseUrl}}"], "path": ["packages", "dashboard", ":id"] } } },
+            { "name": "Delete Package", "request": { "method": "DELETE", "header": [], "url": { "raw": "/packages/dashboard/:id", "host": ["{{baseUrl}}"], "path": ["packages", "dashboard", ":id"] } } },
+            { "name": "Get Package By ID (Dashboard)", "request": { "method": "GET", "header": [], "url": { "raw": "/packages/dashboard/:id", "host": ["{{baseUrl}}"], "path": ["packages", "dashboard", ":id"] } } },
+            { "name": "List Packages (Dashboard)", "request": { "method": "GET", "header": [], "url": { "raw": "/packages/dashboard", "host": ["{{baseUrl}}"], "path": ["packages", "dashboard"] } } }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "localhost:3000" }
+  ]
+} 

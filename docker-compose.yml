@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  # NestJS Application
+  zenstore-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: zenstore-api
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    env_file:
+      - .env.production
+    restart: unless-stopped
+    networks:
+      - zenstore-network
+    depends_on:
+      - mongodb
+    healthcheck:
+      test: ["CMD", "node", "healthcheck.js"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # MongoDB Database (Optional - if you want local MongoDB)
+  mongodb:
+    image: mongo:6.0
+    container_name: zenstore-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password123
+      - MONGO_INITDB_DATABASE=Endex_Store
+    volumes:
+      - mongodb_data:/data/db
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    restart: unless-stopped
+    networks:
+      - zenstore-network
+
+  # Nginx Reverse Proxy (Optional)
+  nginx:
+    image: nginx:alpine
+    container_name: zenstore-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - zenstore-api
+    restart: unless-stopped
+    networks:
+      - zenstore-network
+
+volumes:
+  mongodb_data:
+    driver: local
+
+networks:
+  zenstore-network:
+    driver: bridge
