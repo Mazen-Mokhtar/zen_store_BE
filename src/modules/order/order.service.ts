@@ -5,13 +5,15 @@ import { PackageRepository } from "src/DB/models/Packages/packages.repository";
 import { TUser } from "src/DB/models/User/user.schema";
 import { CreateOrderDTO, OrderIdDTO, UpdateOrderStatusDTO, AdminOrderQueryDTO, WalletTransferDTO } from "./dto";
 import { OrderStatus } from "src/DB/models/Order/order.schema";
-import { GameType } from "src/DB/models/Game/game.schema";
+import { GameType, Currency } from "src/DB/models/Game/game.schema";
 import { Types } from "mongoose";
 import { StripeService } from "src/commen/service/stripe.service";
 import { Request } from "express";
 import { RoleTypes } from "src/DB/models/User/user.schema";
 import { EncryptionService } from "src/commen/service/encryption.service";
 import { cloudService, IAttachments } from "src/commen/multer/cloud.service";
+import { CouponService } from "../coupon/coupon.service";
+import { CouponType } from "src/DB/models/Coupon/coupon.schema";
 
 @Injectable()
 export class OrderService {
@@ -22,7 +24,8 @@ export class OrderService {
         private readonly orderRepository: OrderRepository,
         private readonly gameRepository: GameRepository,
         private readonly packageRepository: PackageRepository,
-        private readonly stripeService: StripeService
+        private readonly stripeService: StripeService,
+        private readonly couponService: CouponService
     ) { }
 
     async createOrder(user: TUser, body: CreateOrderDTO) {
@@ -142,15 +145,46 @@ export class OrderService {
                 : packageItem.price;
         }
 
+        // تحديد العملة تلقائياً بناءً على نوع اللعبة
+        let orderCurrency: Currency;
+        if (game.type === GameType.STEAM) {
+            // للألعاب Steam، استخدام عملة اللعبة أو EGP كافتراضي
+            orderCurrency = game.currency || Currency.EGP;
+        } else {
+            // للألعاب العادية، استخدام عملة الحزمة أو EGP كافتراضي
+            orderCurrency = packageItem?.currency || Currency.EGP;
+        }
+
+        // تطبيق الكوبون إذا تم توفيره
+        let couponData: any = null;
+        let finalAmount = totalAmount;
+        
+        if (body.couponCode) {
+            try {
+                couponData = await this.applyCouponToOrder(body.couponCode, totalAmount);
+                finalAmount = couponData.finalAmount;
+            } catch (error) {
+                throw new BadRequestException(`Coupon error: ${error.message}`);
+            }
+        }
+
         const orderData: any = {
             userId: user._id,
             gameId: body.gameId,
             accountInfo: body.accountInfo,
             paymentMethod: body.paymentMethod,
-            totalAmount: totalAmount,
+            totalAmount: finalAmount,
+            currency: orderCurrency, // استخدام العملة المحددة تلقائياً
             status: OrderStatus.PENDING,
             adminNote: body.note
         };
+
+        // إضافة بيانات الكوبون إذا تم تطبيقه
+        if (couponData) {
+            orderData.couponId = couponData.couponId;
+            orderData.originalAmount = couponData.originalAmount;
+            orderData.discountAmount = couponData.discountAmount;
+        }
 
         // Only add packageId if it exists
         if (body.packageId) {
@@ -159,7 +193,18 @@ export class OrderService {
 
         const order = await this.orderRepository.create(orderData);
 
-        return { success: true, data: order };
+        // إضافة معلومات الكوبون للاستجابة
+        const responseData: any = { ...order.toObject() };
+        if (couponData) {
+            responseData.couponApplied = {
+                code: couponData.couponDetails.code,
+                name: couponData.couponDetails.name,
+                discountAmount: couponData.discountAmount,
+                originalAmount: couponData.originalAmount
+            };
+        }
+
+        return { success: true, data: responseData };
     }
 
     async checkout(user: TUser, orderId: Types.ObjectId) {
@@ -194,23 +239,65 @@ export class OrderService {
             ? `${game.name} - ${packageItem.title}`
             : game.name;
         
-        const currency = packageItem 
-            ? packageItem.currency.toLowerCase()
-            : 'usd'; // Default currency for Steam games without packages
+        // استخدام العملة من الطلب مع EGP كقيمة افتراضية
+        const currency = (order.currency || 'EGP').toLowerCase();
+
+        // إعداد بيانات المنتج للدفع (بالمبلغ الأصلي)
+        const lineItems: any = [{
+            quantity: 1,
+            price_data: {
+                product_data: {
+                    name: productName
+                },
+                currency: currency,
+                unit_amount: (order.originalAmount || order.totalAmount) * 100 // المبلغ الأصلي قبل الخصم
+            }
+        }];
+
+        // إعداد معلومات الجلسة
+        const metadata: any = { orderId: orderId.toString() };
+        let discounts: any[] = [];
+
+        // إنشاء كوبون Stripe إذا كان مطبقاً
+        if (order.couponId && order.discountAmount) {
+            try {
+                // الحصول على تفاصيل الكوبون من قاعدة البيانات
+                const coupon = await this.couponService.getCouponByObjectId(order.couponId);
+                
+                if (coupon) {
+                    // إنشاء كوبون في Stripe باستخدام الدالة المحسنة
+                    const stripeCoupon = await this.createStripeCoupon(
+                        coupon,
+                        order.discountAmount,
+                        order.originalAmount || order.totalAmount,
+                        currency,
+                        orderId
+                    );
+
+                    // إضافة الكوبون إلى الخصومات
+                    discounts = [{
+                        coupon: stripeCoupon.id
+                    }];
+
+                    // إضافة معلومات الكوبون للـ metadata
+                    metadata.couponId = order.couponId.toString();
+                    metadata.couponCode = coupon.code;
+                    metadata.originalAmount = order.originalAmount;
+                    metadata.discountAmount = order.discountAmount;
+                    metadata.stripeCouponId = stripeCoupon.id;
+                }
+            } catch (error) {
+                console.error('Error creating Stripe coupon:', error);
+                // في حالة فشل إنشاء الكوبون، استخدم المبلغ النهائي مباشرة
+                lineItems[0].price_data.unit_amount = order.totalAmount * 100;
+            }
+        }
 
         const session = await this.stripeService.cheakoutSession({
             customer_email: user.email,
-            line_items: [{
-                quantity: 1,
-                price_data: {
-                    product_data: {
-                        name: productName
-                    },
-                    currency: currency,
-                    unit_amount: order.totalAmount * 100 // Convert to cents
-                }
-            }],
-            metadata: { orderId: orderId.toString() }
+            line_items: lineItems,
+            metadata: metadata,
+            discounts: discounts
         });
 
         return { success: true, data: session };
@@ -565,6 +652,15 @@ export class OrderService {
                 )
             };
             
+            // إضافة معلومات الكوبون إذا كان مطبقاً
+            if (updatedOrder.couponId) {
+                responseData.couponApplied = {
+                    originalAmount: updatedOrder.originalAmount,
+                    discountAmount: updatedOrder.discountAmount,
+                    finalAmount: updatedOrder.totalAmount
+                };
+            }
+            
             // Add masked Instagram name if it's insta-transfer
             if (order.paymentMethod === 'insta-transfer' && walletTransferData.nameOfInsta) {
                 responseData.maskedInstaName = this.encryptionService.maskData(
@@ -638,5 +734,73 @@ export class OrderService {
         } catch (error) {
             throw new BadRequestException(`Failed to retrieve transfer details: ${error.message}`);
         }
+    }
+
+    /**
+     * دالة مساعدة لحساب الخصم وتطبيق الكوبون
+     * @param couponCode - كود الكوبون
+     * @param orderAmount - مبلغ الطلب الأصلي
+     * @returns معلومات الخصم والمبلغ النهائي
+     */
+    private async applyCouponToOrder(couponCode: string, orderAmount: number) {
+        try {
+            // التحقق من صحة الكوبون
+            const validationResult = await this.couponService.validateCoupon({
+                code: couponCode,
+                orderAmount: orderAmount
+            });
+
+            if (!validationResult.success) {
+                throw new BadRequestException('Invalid coupon');
+            }
+
+            const { coupon, discountAmount, finalAmount } = validationResult.data;
+
+            // تطبيق الكوبون (زيادة عداد الاستخدام)
+            await this.couponService.applyCoupon(coupon.id.toString());
+
+            return {
+                couponId: coupon.id,
+                originalAmount: orderAmount,
+                discountAmount: discountAmount,
+                finalAmount: finalAmount,
+                couponDetails: coupon
+            };
+        } catch (error) {
+            throw new BadRequestException(`Coupon application failed: ${error.message}`);
+        }
+    }
+
+    /**
+     * إنشاء كوبون Stripe بناءً على نوع الخصم
+     */
+    private async createStripeCoupon(
+        coupon: any,
+        discountAmount: number,
+        orderAmount: number,
+        currency: string,
+        orderId: Types.ObjectId
+    ) {
+        const couponParams: any = {
+            duration: 'once',
+            name: `${coupon.name} - Order ${orderId}`,
+            metadata: {
+                orderId: orderId.toString(),
+                couponId: coupon._id.toString(),
+                couponCode: coupon.code
+            }
+        };
+
+        // تحديد نوع الخصم
+        if (coupon.discountType === CouponType.PERCENTAGE) {
+            // خصم بالنسبة المئوية
+            couponParams.percent_off = coupon.discountValue;
+        } else {
+            // خصم بمبلغ ثابت
+            couponParams.amount_off = Math.round(discountAmount * 100); // تحويل إلى cents
+            couponParams.currency = currency;
+        }
+
+        return await this.stripeService.createCoupon(couponParams);
     }
 }

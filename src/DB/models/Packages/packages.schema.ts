@@ -2,6 +2,7 @@ import { Prop, raw, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
 import { User } from 'src/commen/Decorator/user.decorator';
 import { IAttachments } from 'src/commen/multer/cloud.service';
+import { Currency } from '../Game/game.schema';
 
 // Schema for Packages
 @Schema({ timestamps: true })
@@ -26,8 +27,8 @@ export class Package {
   @Prop({ type: Boolean, default: false }) // Indicates if the package has an offer
   isOffer: boolean;
 
-  @Prop({ type: String, required: true })
-  currency: string; // e.g., "USD", "EGP"
+  @Prop({ type: String, enum: Currency, required: true, default: Currency.EGP })
+  currency: Currency; // العملة المستخدمة للحزمة
 
   @Prop({ type: Boolean, default: true })
   isActive: boolean; // Whether the package is active and available for purchase

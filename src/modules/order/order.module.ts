@@ -14,9 +14,10 @@ import { IsSteamGameValidationConstraint } from "./validators/steam-game.validat
 import { IsValidAccountInfoConstraint } from "./validators/account-info.validator";
 import { IsValidEmailFormatConstraint } from "./validators/email-format.validator";
 import { IsInstaTransferValidationConstraint } from "./validators/insta-transfer.validator";
+import { CouponModule } from "../coupon/coupon.module";
 
 @Module({
-    imports: [SharedModule, orderModel, gameModel, packageModel],
+    imports: [SharedModule, orderModel, gameModel, packageModel, CouponModule],
     controllers: [OrderController],
     providers: [OrderService, OrderRepository, GameRepository, PackageRepository, StripeService, EncryptionService, IsSteamGameValidationConstraint, IsValidAccountInfoConstraint, IsValidEmailFormatConstraint, IsInstaTransferValidationConstraint],
     exports: [OrderService]

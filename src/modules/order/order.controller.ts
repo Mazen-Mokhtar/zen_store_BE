@@ -40,6 +40,7 @@ export class OrderController {
     @Post("/")
     @UseGuards(AuthGuard)
     async createOrder(@User() user: TUser, @Body() body: CreateOrderDTO) {
+        // يدعم تطبيق الكوبونات عبر حقل couponCode في CreateOrderDTO
         return await this.orderService.createOrder(user, body);
     }
 
@@ -52,6 +53,7 @@ export class OrderController {
     @Roles(["user", RoleTypes.SUPER_ADMIN, RoleTypes.ADMIN])
     @UseGuards(AuthGuard, RolesGuard)
     async checkout(@User() user: TUser, @Param() param: OrderIdDTO) {
+        // يدعم الكوبونات المطبقة مسبقاً على الطلب
         return await this.orderService.checkout(user, param.orderId);
     }
 
@@ -98,6 +100,7 @@ export class OrderController {
         @Body() walletTransferData: WalletTransferDTO,
         @UploadedFile() file: Express.Multer.File
     ) {
+        // يدعم عرض معلومات الكوبونات المطبقة في الاستجابة
         return await this.orderService.submitWalletTransfer(
             user,
             new Types.ObjectId(params.orderId),

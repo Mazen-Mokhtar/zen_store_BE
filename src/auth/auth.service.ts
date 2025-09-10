@@ -119,7 +119,9 @@ export class AuthService {
           isConfirm: true
         });
       }
-
+      if(user.provider !== "google"){
+        throw new ConflictException("This email is signed up with another provider")
+      }
       const accessToken: string = this.tokenService.sign({
       payload: { userId: user._id.toString(), role: user.role },
       type: ITokenTypes.access,

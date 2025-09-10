@@ -9,6 +9,14 @@ export enum GameType {
     SUBSCRIPTION = 'subscription'
 }
 
+export enum Currency {
+    EGP = 'EGP',
+    USD = 'USD',
+    EUR = 'EUR',
+    SAR = 'SAR',
+    AED = 'AED'
+}
+
 @Schema({ timestamps: true })
 export class Game {
   @Prop({ type: String, required: true })
@@ -22,6 +30,9 @@ export class Game {
 
   @Prop({ type: Number, required: false, min: 0 })
   price?: number;
+
+  @Prop({ type: String, enum: Currency, required: true, default: Currency.EGP })
+  currency: Currency;
 
   // Offer fields for Steam games
   @Prop({ type: Boolean, default: false })

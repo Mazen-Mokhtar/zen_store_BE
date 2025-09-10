@@ -1,0 +1,533 @@
+{
+  "info": {
+    "_postman_id": "zenstore-coupon-apis",
+    "name": "ZenStore Coupon APIs",
+    "description": "مجموعة شاملة لاختبار جميع APIs الخاصة بنظام الكوبونات في ZenStore",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "zenstore"
+  },
+  "item": [
+    {
+      "name": "Admin Endpoints",
+      "item": [
+        {
+          "name": "Create Coupon",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{admin_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"SAVE20\",\n  \"name\": \"خصم 20%\",\n  \"type\": \"PERCENTAGE\",\n  \"value\": 20,\n  \"minOrderAmount\": 100,\n  \"maxDiscount\": 50,\n  \"validFrom\": \"2024-01-01\",\n  \"validTo\": \"2024-12-31\",\n  \"usageLimit\": 100\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/coupon",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "coupon"
+              ]
+            },
+            "description": "إنشاء كوبون جديد (Admin only)"
+          }
+        },
+        {
+          "name": "Create Fixed Coupon",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{admin_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"FIXED10\",\n  \"name\": \"خصم 10 دولار\",\n  \"type\": \"FIXED\",\n  \"value\": 10,\n  \"minOrderAmount\": 50,\n  \"maxDiscount\": 10,\n  \"validFrom\": \"2024-01-01\",\n  \"validTo\": \"2024-12-31\",\n  \"usageLimit\": -1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/coupon",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "coupon"
+              ]
+            },
+            "description": "إنشاء كوبون خصم ثابت (Admin only)"
+          }
+        },
+        {
+          "name": "Get All Coupons",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/coupon?page=1&sort=createdAt&isActive=true",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "coupon"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "sort",
+                  "value": "createdAt"
+                },
+                {
+                  "key": "isActive",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "الحصول على جميع الكوبونات (Admin only)"
+          }
+        },
+        {
+          "name": "Get Coupons with Filters",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/coupon?code=SAVE20&type=PERCENTAGE&isActive=true&page=1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "coupon"
+              ],
+              "query": [
+                {
+                  "key": "code",
+                  "value": "SAVE20"
+                },
+                {
+                  "key": "type",
+                  "value": "PERCENTAGE"
+                },
+                {
+                  "key": "isActive",
+                  "value": "true"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "البحث في الكوبونات بالفلاتر (Admin only)"
+          }
+        },
+        {
+          "name": "Get Coupon by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/coupon/{{coupon_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "coupon",
+                "{{coupon_id}}"
+              ]
+            },
+            "description": "الحصول على كوبون محدد (Admin only)"
+          }
+        },
+        {
+          "name": "Update Coupon",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{admin_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"خصم 25% محدث\",\n  \"value\": 25,\n  \"maxDiscount\": 75,\n  \"isActive\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/coupon/{{coupon_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "coupon",
+                "{{coupon_id}}"
+              ]
+            },
+            "description": "تحديث كوبون موجود (Admin only)"
+          }
+        },
+        {
+          "name": "Deactivate Coupon",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{admin_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/coupon/{{coupon_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "coupon",
+                "{{coupon_id}}"
+              ]
+            },
+            "description": "إلغاء تفعيل كوبون (Admin only)"
+          }
+        },
+        {
+          "name": "Delete Coupon",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/coupon/{{coupon_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "coupon",
+                "{{coupon_id}}"
+              ]
+            },
+            "description": "حذف كوبون (Admin only)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Public Endpoints",
+      "item": [
+        {
+          "name": "Validate Coupon - Valid",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"SAVE20\",\n  \"orderAmount\": 200\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/coupon/validate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "coupon",
+                "validate"
+              ]
+            },
+            "description": "التحقق من صحة كوبون (Public endpoint)"
+          }
+        },
+        {
+          "name": "Validate Coupon - Invalid Code",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"INVALID_CODE\",\n  \"orderAmount\": 100\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/coupon/validate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "coupon",
+                "validate"
+              ]
+            },
+            "description": "اختبار كوبون غير صحيح"
+          }
+        },
+        {
+          "name": "Validate Coupon - Min Amount",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"SAVE20\",\n  \"orderAmount\": 50\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/coupon/validate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "coupon",
+                "validate"
+              ]
+            },
+            "description": "اختبار كوبون مع مبلغ أقل من الحد الأدنى"
+          }
+        },
+        {
+          "name": "Validate Fixed Coupon",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"FIXED10\",\n  \"orderAmount\": 100\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/coupon/validate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "coupon",
+                "validate"
+              ]
+            },
+            "description": "التحقق من كوبون خصم ثابت"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Security Tests",
+      "item": [
+        {
+          "name": "Unauthorized Access",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/coupon",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "coupon"
+              ]
+            },
+            "description": "محاولة الوصول لـ Admin endpoints بدون token"
+          }
+        },
+        {
+          "name": "User Access Admin Endpoint",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{user_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/coupon",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "coupon"
+              ]
+            },
+            "description": "محاولة مستخدم عادي الوصول لـ Admin endpoint"
+          }
+        },
+        {
+          "name": "Invalid Data Validation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{admin_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"AB\",\n  \"name\": \"A\",\n  \"type\": \"INVALID_TYPE\",\n  \"value\": -10,\n  \"minOrderAmount\": -5,\n  \"maxDiscount\": -1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/coupon",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "coupon"
+              ]
+            },
+            "description": "اختبار validation للبيانات غير الصحيحة"
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "admin_token",
+      "value": "Bearer your_admin_jwt_token_here",
+      "type": "string"
+    },
+    {
+      "key": "user_token",
+      "value": "Bearer your_user_jwt_token_here",
+      "type": "string"
+    },
+    {
+      "key": "coupon_id",
+      "value": "your_coupon_id_here",
+      "type": "string"
+    }
+  ]
+}

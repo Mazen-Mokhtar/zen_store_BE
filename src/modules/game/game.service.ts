@@ -54,7 +54,7 @@ export class GameService {
             page,
             limit,
             { createdAt: -1 },
-            { select: 'name description image offer categories isActive createdAt isPopular price accountInfoFields type' }
+            { select: 'name description image offer categories isActive createdAt isPopular price currency accountInfoFields type' }
         );
 
         return {
@@ -84,7 +84,7 @@ export class GameService {
                         { isDeleted: { $exists: false } }
                     ]
                 },
-                { select: 'name description image offer categories isActive createdAt isPopular price accountInfoFields type' },
+                { select: 'name description image offer categories isActive createdAt isPopular price currency accountInfoFields type' },
                 {
                     sort: { createdAt: -1 },
                     lean: true
@@ -112,7 +112,7 @@ export class GameService {
     async getGameById(gameId: Types.ObjectId) {
         const game = await this.gameRepository.findById(
             gameId,
-            { select: 'name description image offer categories isActive createdAt isPopular accountInfoFields type' },
+            { select: 'name description image offer categories isActive createdAt isPopular accountInfoFields type price currency' },
             { lean: true } // Use lean for better performance
         );
 
@@ -132,7 +132,7 @@ export class GameService {
             const game = await this.gameRepository.findById(
                 gameId,
                 { 
-                    select: 'name description image images video backgroundImage isOffer categoryId isActive createdAt isPopular price accountInfoFields type' 
+                    select: 'name description image images video backgroundImage isOffer categoryId isActive createdAt isPopular price currency accountInfoFields type' 
                 },
                 { lean: true }
             );
@@ -178,7 +178,7 @@ export class GameService {
                     page,
                     limit,
                     { createdAt: -1 },
-                    { select: 'name description image images video backgroundImage isOffer categoryId isActive createdAt isPopular price accountInfoFields type originalPrice finalPrice discountPercentage' }
+                    { select: 'name description image images video backgroundImage isOffer categoryId isActive createdAt isPopular price currency accountInfoFields type originalPrice finalPrice discountPercentage' }
                 );
 
                 return {
@@ -195,7 +195,7 @@ export class GameService {
                 // Fallback to original behavior without pagination
                 const games = await this.gameRepository.find(
                     filter,
-                    { select: 'name description image images video backgroundImage isOffer categoryId isActive createdAt isPopular price accountInfoFields type originalPrice finalPrice discountPercentage' },
+                    { select: 'name description image images video backgroundImage isOffer categoryId isActive createdAt isPopular price currency accountInfoFields type originalPrice finalPrice discountPercentage' },
                     { sort: { createdAt: -1 }, lean: true }
                 );
 
@@ -230,7 +230,7 @@ export class GameService {
                         { isDeleted: { $exists: false } }
                     ]
                 },
-                { select: 'name description image isOffer categoryId isActive createdAt isPopular price accountInfoFields type' },
+                { select: 'name description image isOffer categoryId isActive createdAt isPopular price currency accountInfoFields type' },
                 { sort: { createdAt: -1 }, lean: true }
             );
     

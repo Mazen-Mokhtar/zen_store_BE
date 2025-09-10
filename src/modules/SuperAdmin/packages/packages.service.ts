@@ -7,6 +7,7 @@ import { PackageDocument } from 'src/DB/models/Packages/packages.schema';
 import { CreatePackageDto, UpdatePackageDto } from './dto';
 import { TUser } from 'src/DB/models/User/user.schema';
 import { cloudService, IAttachments } from 'src/commen/multer/cloud.service';
+import { Currency } from 'src/DB/models/Game/game.schema';
 
 @Injectable()
 export class SuperAdminPackagesService {
@@ -50,6 +51,7 @@ export class SuperAdminPackagesService {
 
         return await this.packageRepository.create({ 
             ...body, 
+            currency: body.currency || Currency.EGP, // استخدام العملة المرسلة أو EGP كافتراضي
             image,
             createdBy: user._id 
         });
@@ -71,7 +73,10 @@ export class SuperAdminPackagesService {
         if (!packageDoc)
             throw new NotFoundException("Package Not Found")
 
-        Object.assign(packageDoc, body);
+        Object.assign(packageDoc, {
+            ...body,
+            currency: body.currency || packageDoc.currency || Currency.EGP // استخدام العملة المرسلة أو الحالية أو EGP كافتراضي
+        });
         packageDoc.updateBy = user._id;
 
         await packageDoc.save();

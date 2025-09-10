@@ -5,7 +5,7 @@ import { TUser } from 'src/DB/models/User/user.schema';
 import { cloudService, IAttachments } from 'src/commen/multer/cloud.service';
 import { messageSystem } from 'src/commen/messages';
 import { Types } from 'mongoose';
-import { GameType } from 'src/DB/models/Game/game.schema';
+import { GameType, Currency } from 'src/DB/models/Game/game.schema';
 
 @Injectable()
 export class GameService {
@@ -168,8 +168,12 @@ export class GameService {
         
 
         
+        // تعيين العملة الافتراضية إذا لم يتم تحديدها
+        const currency = body.currency || Currency.EGP;
+
         const newGame = await this.gameRepository.create({ 
             ...body, 
+            currency,
             image,
             images,
             video,
@@ -203,7 +207,11 @@ export class GameService {
         const game = await this.gameRepository.findById(gameId)
         if (!game)
             throw new NotFoundException(messageSystem.game.notFound)
-        await this.gameRepository.updateOne({ _id: gameId }, { ...body, categoryId: new Types.ObjectId(body.categoryId), updateBy: user._id })
+        
+        // الحفاظ على العملة الحالية إذا لم يتم تحديدها، أو تعيين EGP كافتراضي
+        const currency = body.currency || game.currency || Currency.EGP;
+        
+        await this.gameRepository.updateOne({ _id: gameId }, { ...body, currency, categoryId: new Types.ObjectId(body.categoryId), updateBy: user._id })
         return { success: true, data: messageSystem.game.updatedSuccessfully }
     }
     async uploadGameImage(user: TUser, gameId: Types.ObjectId, file: Express.Multer.File) {

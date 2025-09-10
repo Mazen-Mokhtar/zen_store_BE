@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { HydratedDocument, Types } from "mongoose";
-import { GameDocument } from "../Game/game.schema";
+import { GameDocument, Currency } from "../Game/game.schema";
 import { PaymentMethod } from "src/modules/order/enums/payment-method.enum";
 import { EncryptionService } from "../../../commen/service/encryption.service";
 export enum OrderStatus {
@@ -38,6 +38,19 @@ export class Order {
 
   @Prop({ type: Number, required: true })
   totalAmount: number;
+
+  @Prop({ type: String, enum: Currency, required: false, default: Currency.EGP })
+  currency: Currency;
+
+  // Coupon fields
+  @Prop({ type: Types.ObjectId, ref: 'Coupon', required: false })
+  couponId?: Types.ObjectId;
+
+  @Prop({ type: Number, required: false })
+  originalAmount?: number; // المبلغ الأصلي قبل الخصم
+
+  @Prop({ type: Number, required: false })
+  discountAmount?: number; // مبلغ الخصم
 
   @Prop({ type: Date, default: Date.now })
   createdAt: Date;

@@ -15,7 +15,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PartialType } from '@nestjs/mapped-types';
-import { GameType } from 'src/DB/models/Game/game.schema';
+import { GameType, Currency } from 'src/DB/models/Game/game.schema';
 
 /* === المرفقات الخاصة بالصورة === */
 export class AttachmentDto {
@@ -68,6 +68,10 @@ export class CreateGameDto {
     @IsNumber()
     @Min(0)
     price?: number;
+
+    @IsOptional()
+    @IsEnum(Currency)
+    currency?: Currency;
 
     // Offer fields for Steam games
     @IsOptional()

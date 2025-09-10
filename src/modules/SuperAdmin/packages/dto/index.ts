@@ -1,8 +1,9 @@
 import { PartialType } from '@nestjs/mapped-types';
-import { IsOptional, IsString, IsNumber, IsMongoId, IsBoolean, IsNotEmpty, Min, ValidateNested } from 'class-validator';
+import { IsOptional, IsString, IsNumber, IsMongoId, IsBoolean, IsNotEmpty, Min, ValidateNested, IsEnum } from 'class-validator';
 import { Type } from 'class-transformer';
 import { Types } from 'mongoose';
 import { IAttachments } from 'src/commen/multer/cloud.service';
+import { Currency } from 'src/DB/models/Game/game.schema';
 
 /* === المرفقات الخاصة بالصورة === */
 export class AttachmentDto {
@@ -43,9 +44,9 @@ export class CreatePackageDto {
     @Min(0.01)
     finalPrice?: number;
 
-    @IsString()
-    @IsNotEmpty()
-    currency: string;
+    @IsEnum(Currency)
+    @IsOptional()
+    currency?: Currency;
 
     @Type(() => Boolean)
     @IsBoolean()
