@@ -3,7 +3,7 @@ import { OrderRepository } from "src/DB/models/Order/order.repository";
 import { GameRepository } from "src/DB/models/Game/game.repository";
 import { PackageRepository } from "src/DB/models/Packages/packages.repository";
 import { TUser } from "src/DB/models/User/user.schema";
-import { CreateOrderDTO, OrderIdDTO, UpdateOrderStatusDTO, AdminOrderQueryDTO, WalletTransferDTO } from "./dto";
+import { CreateOrderDTO, OrderIdDTO, UpdateOrderStatusDTO, AdminOrderQueryDTO, WalletTransferDTO, UserOrderQueryDTO } from "./dto";
 import { OrderStatus } from "src/DB/models/Order/order.schema";
 import { GameType, Currency } from "src/DB/models/Game/game.schema";
 import { Types } from "mongoose";
@@ -352,18 +352,102 @@ export class OrderService {
         return { success: true, data: "Order cancelled successfully" };
     }
 
-    async getUserOrders(userId: Types.ObjectId) {
+    async getUserOrders(userId: Types.ObjectId, query?: UserOrderQueryDTO) {
+        let filter: any = { userId };
+        
+        // If no query provided, use default behavior
+        if (!query) {
+            const orders = await this.orderRepository.findWithPopulate(
+                filter,
+                "",
+                { sort: { createdAt: -1 } },
+                undefined,
+                [
+                    { path: "gameId", select: "name image type" },
+                    { path: "packageId", select: "title price", match: { _id: { $ne: null } } }
+                ]
+            );
+            return { success: true, data: orders };
+        }
+
+        // Status filter
+        if (query.status) {
+            filter.status = query.status;
+        }
+
+        // Payment status filter
+        if (query.paymentStatus) {
+            filter.paymentStatus = query.paymentStatus;
+        }
+
+        // Date range filter
+        if (query.startDate || query.endDate) {
+            filter.createdAt = {};
+            if (query.startDate) {
+                filter.createdAt.$gte = new Date(query.startDate);
+            }
+            if (query.endDate) {
+                filter.createdAt.$lte = new Date(query.endDate);
+            }
+        }
+
+        // Search filter - search in game name and package title
+        if (query.search) {
+            const searchRegex = new RegExp(query.search, 'i');
+            filter.$or = [
+                { 'gameId.name': searchRegex },
+                { 'packageId.title': searchRegex }
+            ];
+        }
+
+        // Pagination parameters
+        const page = query.page || 1;
+        const limit = query.limit || 20;
+        const skip = (page - 1) * limit;
+
+        // Sort configuration
+        let sortConfig: any = { createdAt: -1 }; // Default sort
+        if (query.sortBy) {
+            const sortOrder = query.sortOrder === 'asc' ? 1 : -1;
+            sortConfig = { [query.sortBy]: sortOrder };
+        }
+
+        // Get total count for pagination
+        const total = await this.orderRepository.count(filter);
+
+        // Get paginated data
         const orders = await this.orderRepository.findWithPopulate(
-            { userId },
+            filter,
             "",
-            { sort: { createdAt: -1 } },
+            { 
+                sort: sortConfig, 
+                skip: skip,
+                limit: limit
+            },
             undefined,
             [
                 { path: "gameId", select: "name image type" },
                 { path: "packageId", select: "title price", match: { _id: { $ne: null } } }
             ]
         );
-        return { success: true, data: orders };
+
+        // Calculate pagination info
+        const totalPages = Math.ceil(total / limit);
+        const hasNextPage = page < totalPages;
+        const hasPrevPage = page > 1;
+        
+        return { 
+            success: true, 
+            data: orders,
+            pagination: {
+                currentPage: page,
+                totalPages,
+                totalItems: total,
+                itemsPerPage: limit,
+                hasNextPage,
+                hasPrevPage
+            }
+        };
     }
 
     async getOrderDetails(user: TUser, orderId: Types.ObjectId) {

@@ -3,7 +3,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { OrderService } from './order.service';
 import { User } from "src/commen/Decorator/user.decorator";
 import { TUser } from "src/DB/models/User/user.schema";
-import { CreateOrderDTO, OrderIdDTO, UpdateOrderStatusDTO, AdminOrderQueryDTO, WalletTransferDTO, WalletTransferImageDTO } from "./dto";
+import { CreateOrderDTO, OrderIdDTO, UpdateOrderStatusDTO, AdminOrderQueryDTO, WalletTransferDTO, WalletTransferImageDTO, UserOrderQueryDTO } from "./dto";
 import { Roles } from "src/commen/Decorator/roles.decorator";
 import { AuthGuard } from "src/commen/Guards/auth.guard";
 import { RolesGuard } from "src/commen/Guards/role.guard";
@@ -26,8 +26,8 @@ export class OrderController {
 
     @Get("/")
     @UseGuards(AuthGuard)
-    async getOrders(@User() user: TUser) {
-        return await this.orderService.getUserOrders(user._id);
+    async getOrders(@User() user: TUser, @Query() query: UserOrderQueryDTO) {
+        return await this.orderService.getUserOrders(user._id, query);
     }
 
     @Get("admin/all")

@@ -145,3 +145,57 @@ export class WalletTransferImageDTO {
     @IsMongoId()
     orderId: Types.ObjectId;
 }
+
+export class UserOrderQueryDTO {
+    @IsEnum(OrderStatus)
+    @IsOptional()
+    status?: OrderStatus;
+    
+    @IsOptional()
+    @Transform(({ value }) => {
+        if (value === undefined || value === null || value === '') {
+            return 1;
+        }
+        const parsed = parseInt(value, 10);
+        return isNaN(parsed) ? 1 : parsed;
+    })
+    @IsInt()
+    @Min(1)
+    page?: number = 1;
+
+    @IsOptional()
+    @Transform(({ value }) => {
+        if (value === undefined || value === null || value === '') {
+            return 20;
+        }
+        const parsed = parseInt(value, 10);
+        return isNaN(parsed) ? 20 : parsed;
+    })
+    @IsInt()
+    @Min(1)
+    limit?: number = 20;
+    
+    @IsString()
+    @IsOptional()
+    search?: string;
+    
+    @IsString()
+    @IsOptional()
+    sortBy?: string;
+    
+    @IsString()
+    @IsOptional()
+    sortOrder?: 'asc' | 'desc';
+    
+    @IsString()
+    @IsOptional()
+    paymentStatus?: string;
+    
+    @IsString()
+    @IsOptional()
+    startDate?: string;
+    
+    @IsString()
+    @IsOptional()
+    endDate?: string;
+}
