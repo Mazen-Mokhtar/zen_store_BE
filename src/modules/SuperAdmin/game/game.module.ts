@@ -7,8 +7,8 @@ import { gameModel } from 'src/DB/models/Game/game.model';
 import { cloudService } from 'src/commen/multer/cloud.service';
 
 @Module({
-  imports:[SharedModule , gameModel],
+  imports: [SharedModule, gameModel],
   controllers: [GameController],
-  providers: [GameService, GameRepository,cloudService],
+  providers: [GameService, GameRepository, cloudService],
 })
 export class GameModuleAdmin {}

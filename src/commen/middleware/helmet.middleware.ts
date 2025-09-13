@@ -17,21 +17,21 @@ export class HelmetMiddleware implements NestMiddleware {
       crossOriginEmbedderPolicy: true,
       crossOriginOpenerPolicy: { policy: 'same-origin' },
       crossOriginResourcePolicy: { policy: 'same-origin' },
-      
+
       // Browser features and security
       referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
       hsts: SecurityConfig.hsts,
       noSniff: true, // X-Content-Type-Options
       originAgentCluster: true,
       dnsPrefetchControl: { allow: false },
-      
+
       // Framing controls
       frameguard: { action: 'deny' }, // X-Frame-Options
-      
+
       // Additional protections
       permittedCrossDomainPolicies: { permittedPolicies: 'none' },
       xssFilter: true, // X-XSS-Protection
-      
+
       // Disable features
       ieNoOpen: true,
     })(req, res, next);

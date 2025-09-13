@@ -19,6 +19,7 @@ services:
       - zenstore-network
     depends_on:
       - mongodb
+      # - redis  # Temporarily disabled - uncomment when Redis is ready on server
     healthcheck:
       test: ["CMD", "node", "healthcheck.js"]
       interval: 30s
@@ -43,6 +44,25 @@ services:
     networks:
       - zenstore-network
 
+  # Redis Cache (Optional) - TEMPORARILY DISABLED
+  # Uncomment the following section when Redis is ready on server
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: zenstore-redis
+  #   ports:
+  #     - "6379:6379"
+  #   command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis123}
+  #   volumes:
+  #     - redis_data:/data
+  #   restart: unless-stopped
+  #   networks:
+  #     - zenstore-network
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+  #     interval: 30s
+  #     timeout: 3s
+  #     retries: 5
+
   # Nginx Reverse Proxy (Optional)
   nginx:
     image: nginx:alpine
@@ -62,6 +82,8 @@ services:
 volumes:
   mongodb_data:
     driver: local
+  # redis_data:  # Temporarily disabled - uncomment when Redis is enabled
+  #   driver: local
 
 networks:
   zenstore-network:

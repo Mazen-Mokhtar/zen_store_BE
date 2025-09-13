@@ -11,7 +11,9 @@ describe('SuperAdminPackagesController', () => {
       providers: [SuperAdminPackagesService],
     }).compile();
 
-    controller = module.get<SuperAdminPackagesController>(SuperAdminPackagesController);
+    controller = module.get<SuperAdminPackagesController>(
+      SuperAdminPackagesController,
+    );
   });
 
   it('should be defined', () => {

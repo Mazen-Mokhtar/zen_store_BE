@@ -1,5 +1,5 @@
 export function generateOTPEmail(otp, userName) {
-    return `
+  return `
 <!DOCTYPE html>
 <html lang="ar">
 <head>

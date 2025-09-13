@@ -1,4 +1,8 @@
-import { Injectable, NestMiddleware, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NestMiddleware,
+  BadRequestException,
+} from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import { CsrfService } from '../service/csrf.service';
 
@@ -8,22 +12,23 @@ export class CsrfMiddleware implements NestMiddleware {
 
   // List of methods that require CSRF protection
   private readonly protectedMethods = ['POST', 'PUT', 'DELETE', 'PATCH'];
-  
+
   // Import security config for exempt paths
-  private readonly exemptPaths = require('../config/security.config').SecurityConfig.csrf.exemptPaths;
+  private readonly exemptPaths = require('../config/security.config')
+    .SecurityConfig.csrf.exemptPaths;
 
   use(req: Request, res: Response, next: NextFunction) {
     // Skip CSRF check for exempt paths or non-protected methods
     if (
       !this.protectedMethods.includes(req.method) ||
-      this.exemptPaths.some(path => req.path.startsWith(path))
+      this.exemptPaths.some((path) => req.path.startsWith(path))
     ) {
       return next();
     }
 
     // Import security config
     const { SecurityConfig } = require('../config/security.config');
-    
+
     // For API requests, check the CSRF token in the header
     const csrfToken = req.headers[SecurityConfig.csrf.headerName] as string;
     const cookieToken = req.cookies?.[SecurityConfig.csrf.cookieName];
@@ -47,9 +52,9 @@ export class CsrfMiddleware implements NestMiddleware {
   private setNewCsrfToken(res: Response, next: NextFunction) {
     // Import security config
     const { SecurityConfig } = require('../config/security.config');
-    
+
     const token = this.csrfService.generateToken();
-    
+
     // Set the CSRF token as a cookie with secure attributes from config
     res.cookie(SecurityConfig.csrf.cookieName, token, {
       httpOnly: true, // Not accessible via JavaScript
@@ -58,7 +63,7 @@ export class CsrfMiddleware implements NestMiddleware {
       path: '/', // Available across the site
       maxAge: SecurityConfig.csrf.cookieMaxAge,
     });
-    
+
     next();
   }
 }

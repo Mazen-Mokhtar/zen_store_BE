@@ -1,7 +1,7 @@
-import { MongooseModule } from "@nestjs/mongoose";
-import { User, userSchema } from "./user.schema";
+import { MongooseModule } from '@nestjs/mongoose';
+import { User, userSchema } from './user.schema';
 
-// model 
+// model
 export const UserModel = MongooseModule.forFeature([
-    { name: User.name, schema: userSchema }
-])
+  { name: User.name, schema: userSchema },
+]);

@@ -26,17 +26,17 @@ export class AllExceptionsFilter implements ExceptionFilter {
     if (exception instanceof HttpException) {
       status = exception.getStatus();
       const errorResponse = exception.getResponse();
-      message = 
+      message =
         typeof errorResponse === 'object' && 'message' in errorResponse
           ? Array.isArray(errorResponse['message'])
             ? errorResponse['message'][0]
             : errorResponse['message']
           : exception.message;
-      error = 
+      error =
         typeof errorResponse === 'object' && 'error' in errorResponse
           ? String(errorResponse['error'])
           : exception.name;
-    } 
+    }
     // Handle MongoDB errors
     else if (exception instanceof MongoError) {
       // Handle duplicate key errors
@@ -45,7 +45,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
         message = 'Duplicate entry found';
         error = 'Conflict';
       }
-    } 
+    }
     // Handle other errors
     else if (exception instanceof Error) {
       message = exception.message;
@@ -59,7 +59,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
     );
 
     // Don't expose internal server error details in production
-    if (process.env.NODE_ENV === 'production' && status === HttpStatus.INTERNAL_SERVER_ERROR) {
+    if (
+      process.env.NODE_ENV === 'production' &&
+      status === HttpStatus.INTERNAL_SERVER_ERROR
+    ) {
       message = 'Internal server error';
     }
 

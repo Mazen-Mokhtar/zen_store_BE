@@ -35,21 +35,33 @@ export class Package {
   @Prop({ type: Boolean })
   isDeleted: boolean; // Whether the package is active and available for purchase
   @Prop({ type: Types.ObjectId, ref: User.name })
-  createdBy: Types.ObjectId
+  createdBy: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: User.name })
-  updateBy: Types.ObjectId
+  updateBy: Types.ObjectId;
 
-  @Prop(raw({
-    secure_url: { type: String, required: false },
-    public_id: { type: String, required: false }
-  }))
+  @Prop(
+    raw({
+      secure_url: { type: String, required: false },
+      public_id: { type: String, required: false },
+    }),
+  )
   image?: IAttachments;
 }
 
 export const PackageSchema = SchemaFactory.createForClass(Package);
-export type PackageDocument = HydratedDocument<Package>;
 
+// Add strategic indexes for better query performance
+// Compound index for game-based package queries with active/deleted filters
+PackageSchema.index({ gameId: 1, isActive: 1, isDeleted: 1 });
+// Index for offer-based package queries
+PackageSchema.index({ isOffer: 1, isActive: 1, isDeleted: 1 });
+// Index for currency-based filtering
+PackageSchema.index({ currency: 1, isActive: 1 });
+// Index for price-based sorting and filtering
+PackageSchema.index({ price: 1, isActive: 1 });
+
+export type PackageDocument = HydratedDocument<Package>;
 
 PackageSchema.pre('save', async function (next) {
   try {
@@ -61,17 +73,30 @@ PackageSchema.pre('save', async function (next) {
     // If the package is an offer, validate and calculate discount percentage
     if (this.isOffer) {
       if (!this.finalPrice || this.finalPrice <= 0) {
-        return next(new Error('Final price must be provided and greater than 0 for an offer'));
+        return next(
+          new Error(
+            'Final price must be provided and greater than 0 for an offer',
+          ),
+        );
       }
       if (!this.originalPrice || this.originalPrice <= 0) {
-        return next(new Error('Original price must be provided and greater than 0 for an offer'));
+        return next(
+          new Error(
+            'Original price must be provided and greater than 0 for an offer',
+          ),
+        );
       }
       if (this.finalPrice >= this.originalPrice) {
-        return next(new Error('Final price must be less than original price for an offer'));
+        return next(
+          new Error(
+            'Final price must be less than original price for an offer',
+          ),
+        );
       }
 
       // Calculate discount percentage
-      this.discountPercentage = ((this.originalPrice - this.finalPrice) / this.originalPrice) * 100;
+      this.discountPercentage =
+        ((this.originalPrice - this.finalPrice) / this.originalPrice) * 100;
       this.discountPercentage = Math.round(this.discountPercentage * 100) / 100; // Round to 2 decimal places
     } else {
       // If not an offer, ensure offer-related fields are unset

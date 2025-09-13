@@ -16,20 +16,20 @@ export class CsrfService {
   validateToken(token: string, expectedToken: string): boolean {
     // Import security config
     const { SecurityConfig } = require('../config/security.config');
-    
+
     if (!token || !expectedToken) {
       return false;
     }
-    
+
     // Check if tokens have the same length before comparison
     if (token.length !== expectedToken.length) {
       return false;
     }
-    
+
     // Use timing-safe comparison to prevent timing attacks
     return crypto.timingSafeEqual(
       Buffer.from(token),
-      Buffer.from(expectedToken)
+      Buffer.from(expectedToken),
     );
   }
 }

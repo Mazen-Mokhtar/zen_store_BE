@@ -1,7 +1,10 @@
 import { Injectable, NestMiddleware } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import { rateLimit } from 'express-rate-limit';
-import { SecurityEventType, SecurityMonitoringService } from '../service/security-monitoring.service';
+import {
+  SecurityEventType,
+  SecurityMonitoringService,
+} from '../service/security-monitoring.service';
 
 @Injectable()
 export class RateLimitMiddleware implements NestMiddleware {
@@ -30,9 +33,9 @@ export class RateLimitMiddleware implements NestMiddleware {
         details: {
           headers: req.headers,
           method: req.method,
-        }
+        },
       });
-      
+
       // Send standard response
       res.status(options.statusCode).json(options.message);
     },
@@ -54,7 +57,10 @@ export class AuthRateLimitMiddleware implements NestMiddleware {
       return {
         windowMs: SecurityConfig.authRateLimit.windowMs,
         max: SecurityConfig.authRateLimit.maxAttempts,
-        message: { statusCode: 429, message: SecurityConfig.authRateLimit.message },
+        message: {
+          statusCode: 429,
+          message: SecurityConfig.authRateLimit.message,
+        },
       };
     })(),
     skipSuccessfulRequests: true, // Only count failed requests
@@ -63,9 +69,10 @@ export class AuthRateLimitMiddleware implements NestMiddleware {
     keyGenerator: (req) => {
       // Use IP + email as the key to prevent multiple attempts with different emails from same IP
       // Validate and sanitize email input
-      const email = req.body?.email && typeof req.body.email === 'string' 
-        ? req.body.email.toLowerCase().trim() 
-        : 'unknown';
+      const email =
+        req.body?.email && typeof req.body.email === 'string'
+          ? req.body.email.toLowerCase().trim()
+          : 'unknown';
       const ip = req.ip || req.connection?.remoteAddress || '127.0.0.1';
       return `${ip}-${email}`;
     },
@@ -75,16 +82,17 @@ export class AuthRateLimitMiddleware implements NestMiddleware {
         type: SecurityEventType.BRUTE_FORCE_ATTEMPT,
         timestamp: new Date(),
         ip: req.ip || '127.0.0.1',
-        email: req.body?.email && typeof req.body.email === 'string' 
-          ? req.body.email.toLowerCase().trim() 
-          : 'unknown',
+        email:
+          req.body?.email && typeof req.body.email === 'string'
+            ? req.body.email.toLowerCase().trim()
+            : 'unknown',
         path: req.path,
         details: {
           headers: req.headers,
           method: req.method,
-        }
+        },
       });
-      
+
       // Send standard response
       res.status(options.statusCode).json(options.message);
     },

@@ -12,4 +12,4 @@ import { gameModel } from 'src/DB/models/Game/game.model';
   controllers: [SuperAdminPackagesController],
   providers: [SuperAdminPackagesService, PackageRepository, GameRepository],
 })
-export class SuperAdminPackagesModule { }
+export class SuperAdminPackagesModule {}

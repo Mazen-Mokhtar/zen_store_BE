@@ -1,8 +1,8 @@
-import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { HydratedDocument, Types } from "mongoose";
-import { GameDocument, Currency } from "../Game/game.schema";
-import { PaymentMethod } from "src/modules/order/enums/payment-method.enum";
-import { EncryptionService } from "../../../commen/service/encryption.service";
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { HydratedDocument, Types } from 'mongoose';
+import { GameDocument, Currency } from '../Game/game.schema';
+import { PaymentMethod } from 'src/modules/order/enums/payment-method.enum';
+import { EncryptionService } from '../../../commen/service/encryption.service';
 export enum OrderStatus {
   PENDING = 'pending',
   PAID = 'paid',
@@ -33,13 +33,18 @@ export class Order {
   @Prop({ type: String })
   adminNote: string;
 
-  @Prop({ type: String, enum: PaymentMethod , required: true })
+  @Prop({ type: String, enum: PaymentMethod, required: true })
   paymentMethod: PaymentMethod;
 
   @Prop({ type: Number, required: true })
   totalAmount: number;
 
-  @Prop({ type: String, enum: Currency, required: false, default: Currency.EGP })
+  @Prop({
+    type: String,
+    enum: Currency,
+    required: false,
+    default: Currency.EGP,
+  })
   currency: Currency;
 
   // Coupon fields
@@ -68,12 +73,12 @@ export class Order {
   intent: string; // Stripe payment intent ID
 
   // Wallet Transfer Fields
-  @Prop({ 
+  @Prop({
     type: {
       secure_url: String,
-      public_id: String
+      public_id: String,
     },
-    required: false 
+    required: false,
   })
   walletTransferImage?: {
     secure_url: string;
@@ -93,47 +98,66 @@ export class Order {
   instaTransferSubmittedAt: Date;
 }
 
+export const orderSchema = SchemaFactory.createForClass(Order);
 
-export const orderSchema = SchemaFactory.createForClass(Order)
+// Add strategic indexes for better query performance
+// Compound index for user orders with status and date filtering
+orderSchema.index({ userId: 1, status: 1, createdAt: -1 });
+// Index for admin order management queries
+orderSchema.index({ status: 1, createdAt: -1 });
+// Index for payment method filtering
+orderSchema.index({ paymentMethod: 1, status: 1 });
+// Index for game-based order queries
+orderSchema.index({ gameId: 1, status: 1 });
+// Index for coupon usage tracking
+orderSchema.index({ couponId: 1, status: 1 });
 
-export type OrderDocument = HydratedDocument<Order>
+export type OrderDocument = HydratedDocument<Order>;
 
 // Post-find hook for decryption/masking of wallet transfer data
 orderSchema.post(['find', 'findOne', 'findById'] as any, function (doc) {
   const encryptionService = new EncryptionService();
-  
+
   // Check if this is an admin request by looking at the query context
   // This is a simple approach - in production you might want to pass user context differently
   const isAdminRequest = (this as any).getOptions()?.isAdminRequest || false;
-  
+
   const processWalletData = (singleDoc: any) => {
     if (singleDoc && singleDoc.walletTransferNumber) {
       try {
-        const decryptedNumber = encryptionService.decrypt(singleDoc.walletTransferNumber);
-        
+        const decryptedNumber = encryptionService.decrypt(
+          singleDoc.walletTransferNumber,
+        );
+
         if (isAdminRequest) {
           // For admin: show decrypted data
           singleDoc.walletTransferNumber = decryptedNumber;
         } else {
           // For regular users: show masked data based on new rules
-          singleDoc.walletTransferNumber = encryptionService.maskData(decryptedNumber, 'phone');
+          singleDoc.walletTransferNumber = encryptionService.maskData(
+            decryptedNumber,
+            'phone',
+          );
         }
       } catch (error) {
         // If decryption fails, keep the encrypted value or set to null
         console.warn('Failed to decrypt walletTransferNumber:', error.message);
       }
     }
-    
+
     if (singleDoc && singleDoc.nameOfInsta) {
       try {
         const decryptedInsta = encryptionService.decrypt(singleDoc.nameOfInsta);
-        
+
         if (isAdminRequest) {
           // For admin: show decrypted data
           singleDoc.nameOfInsta = decryptedInsta;
         } else {
           // For regular users: no masking for Instagram names
-          singleDoc.nameOfInsta = encryptionService.maskData(decryptedInsta, 'instagram');
+          singleDoc.nameOfInsta = encryptionService.maskData(
+            decryptedInsta,
+            'instagram',
+          );
         }
       } catch (error) {
         // If decryption fails, keep the encrypted value or set to null
@@ -155,7 +179,9 @@ orderSchema.post(['find', 'findOne', 'findById'] as any, function (doc) {
 orderSchema.pre('save', async function (next) {
   try {
     // Fetch the game document to get its accountInfoFields
-    const game : GameDocument | null = await this.model('Game').findById(this.gameId) ;
+    const game: GameDocument | null = await this.model('Game').findById(
+      this.gameId,
+    );
 
     if (!game) {
       const error = new Error('Game not found');
@@ -163,7 +189,9 @@ orderSchema.pre('save', async function (next) {
     }
 
     // Extract valid field names for this game
-    const validFieldNames = game.accountInfoFields.map(field => field.fieldName);
+    const validFieldNames = game.accountInfoFields.map(
+      (field) => field.fieldName,
+    );
 
     // Check for invalid fields in accountInfo
     const invalidFields: string[] = [];
@@ -176,7 +204,7 @@ orderSchema.pre('save', async function (next) {
     // If there are invalid fields, throw an error
     if (invalidFields.length > 0) {
       const error = new Error(
-        `Invalid account fields for this game: ${invalidFields.join(', ')}. Valid fields are: ${validFieldNames.join(', ')}`
+        `Invalid account fields for this game: ${invalidFields.join(', ')}. Valid fields are: ${validFieldNames.join(', ')}`,
       );
       return next(error);
     }
@@ -187,7 +215,9 @@ orderSchema.pre('save', async function (next) {
       if (field.isRequired) {
         const fieldExists = this.accountInfo.some(
           (info: { fieldName: string; value: string }) =>
-            info.fieldName === field.fieldName && info.value && info.value.trim() !== ''
+            info.fieldName === field.fieldName &&
+            info.value &&
+            info.value.trim() !== '',
         );
         if (!fieldExists) {
           missingFields.push(field.fieldName);
@@ -198,7 +228,7 @@ orderSchema.pre('save', async function (next) {
     // If there are missing required fields, throw an error
     if (missingFields.length > 0) {
       const error = new Error(
-        `Missing required account fields for this game: ${missingFields.join(', ')}`
+        `Missing required account fields for this game: ${missingFields.join(', ')}`,
       );
       return next(error);
     }
